@@ -1,0 +1,26 @@
+{
+  "name": "blend-cli",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "tsc && copyfiles -u 1 template/**/* dist/",
+    "start": "node dist/index.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "commander": "^12.1.0",
+    "fs-extra": "^11.2.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "copyfiles": "^2.4.1",
+    "typescript": "^5.7.2"
+  },
+  "bin": {
+    "blend-cli": "./dist/index.js"
+  }
+}
