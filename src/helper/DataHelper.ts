@@ -177,6 +177,16 @@ export default class DataHelper {
                             
                         // }
                     });
+
+                    section.rnModuleList.forEach(rnModule => {
+                        // if (expressModule.includedDataModuleList.includes(moduleData.name)) {
+                        if(section.name==sectionData.name) {
+                            const rnDataPath = `${this.folderPath}/module/${section.name}/react-native/${rnModule.name}/src-gen/data/${moduleData.name}.ts`
+                            FileHelper.writeFile(rnDataPath, finalCode);
+                        }
+                            
+                        // }
+                    });
                 })
 
             });

@@ -6,6 +6,8 @@ import DataHelper from './helper/DataHelper';
 import SectionHelper from './helper/SectionHelper';
 import ExpressHelper from './helper/ExpressHelper';
 import BasicHelper from './helper/BasicHelper';
+import RNHelper from './helper/RNHelper';
+import FrontEndApiHelper from './helper/FrontEndApiHelper';
 
 const program = new Command();
 
@@ -77,9 +79,11 @@ program.command('prepare')
     }
     const dataHelper = new DataHelper();
     const expressHelper= new ExpressHelper();
+    const rnHelper = new RNHelper();
     const basicFileContent = FileHelper.readFile(basicFilePath);
-    dataHelper.doDataOperations(basicFileContent);
-    expressHelper.doExpressOperations(basicFileContent);
+    // dataHelper.doDataOperations(basicFileContent);
+    // expressHelper.doExpressOperations(basicFileContent);
+    rnHelper.doRNOperations();
 
     // Ensure the .basicConfig folder and its contents exist
     const basicConfigFolderPath = path.join(folderPath, '.basicConfig');
@@ -113,8 +117,12 @@ program.command('generate')
     const basicFileContent = FileHelper.readFile(basicFilePath);
     const expressHelper = new ExpressHelper();
     const dataHelper = new DataHelper();
+    const rnHelper = new RNHelper();
+    const frontEndApiHelper = new FrontEndApiHelper();
     expressHelper.doExpressGenerations(basicFileContent);
     dataHelper.parseJSONAndGenerateFiles();
+    rnHelper.doRNGenerations();
+    frontEndApiHelper.doFrontEndApiGenerations();
     // SectionHelper.createProject(basicFileContent);
     // Add your custom logic here
   });
@@ -127,9 +135,12 @@ program.command('generate')
     const basicFilePath = path.join(folderPath, `${folderName}.basic`);
     const basicFileContent = FileHelper.readFile(basicFilePath);
     const basicHelper = new BasicHelper();
+    const rnHelper = new RNHelper();
+
     
     
     basicHelper.parseSpec(basicFileContent);
+    // rnHelper.parseSpec(basicFileContent);
     // SectionHelper.createProject(basicFileContent);
     // Add your custom logic here
   });

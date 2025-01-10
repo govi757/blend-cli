@@ -363,7 +363,7 @@ ${apiCode}
         return code;
     }
 
-    generateSampleApiDataCode(apiSection: IApiSection) {
+    generateSampleApiDataCode(apiSection: IApiSection,type="api") {
         const code = `
         ${apiSection.apiList.reduce((acc: string, api) => {
             const inputKeyList = Object.keys(api.input);
@@ -376,7 +376,12 @@ ${apiCode}
                 if (typeParts.length === 2) {
                     const [module, typeName] = typeParts;
                     const baseTypeName = typeName.endsWith("[]") ? typeName.slice(0, -2) : typeName;
-                    imports.add(`import { ${baseTypeName} } from '../data/${module}';`);
+                    if(type==="api") {
+                        imports.add(`import { ${baseTypeName} } from '../data/${module}';`);
+                    } else {
+                        imports.add(`import { ${baseTypeName} } from '../../../data/${module}';`);
+                    }
+                    
                 }
             })
             acc = acc + `
@@ -403,6 +408,14 @@ export class ${inputDataTypeName} {
                                 .map((inputKey) => this.generateFromJSONField({...api.input[inputKey],name: inputKey}))
                                 .join(',\n')}
             );
+        }
+
+         toJSON():object {
+            return {
+    ${inputKeyList
+                                .map((inputKey) => this.generateToJSONField({...api.input[inputKey],name: inputKey}))
+                                .join('\n')}
+        };
         }
 
     checkDefaultPreCondition() {
@@ -442,7 +455,16 @@ ${outputKeyList.length > 0 ? `export class ${outputDataTypeName} {
                                 .join(',\n')}
             );
         }
-}`: ''}
+}
+        
+   toJSON():object {
+            return {
+    ${outputKeyList
+                                .map((outputKey) => this.generateToJSONField({...api.output[outputKey],name: outputKey}))
+                                .join(',\n')}
+        };
+        }
+`: ''}
 
 `
             return acc;

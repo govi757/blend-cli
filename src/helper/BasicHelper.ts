@@ -19,6 +19,7 @@ export default class BasicHelper {
         const sectionRegex = /section\s+(\w+)\s*\{([^}]+)\}/g;
         const dataModuleRegex = /data-module\s+(.+)/;
         const expressModuleRegex = /express-module\s+(\w+)(?:\(([^)]*)\))?/g;
+        const rnModuleRegex = /rn-module\s+(\w+)(?:\(([^)]*)\))?/g;
     
         const sections: IBasicSection[] = [];
         let match;
@@ -46,12 +47,19 @@ export default class BasicHelper {
             // Validate and extract express modules
             const expressModuleMatches = [...sectionBody.matchAll(expressModuleRegex)];
             const expressModuleList = expressModuleMatches.map((emMatch) => {
-                console.log(emMatch,"emMatch")
                 const name = emMatch[1];
                 const includedDataModules = emMatch[2]
                     ? emMatch[2].split(",").map((m) => m.trim())
                     : [];
                 return { name, includedDataModuleList: includedDataModules };
+            });
+
+            const rnModuleMatches = [...sectionBody.matchAll(rnModuleRegex)];
+            console.log(rnModuleMatches,"rnModuleList")
+            const rnModuleList = rnModuleMatches.map((emMatch) => {
+                console.log(emMatch,"rnModule")
+                const name = emMatch[1];
+                return { name};
             });
     
             // Push the section with the full dataModuleList and expressModuleList
@@ -59,6 +67,7 @@ export default class BasicHelper {
                 name: sectionName,
                 dataModuleList,
                 expressModuleList,
+                rnModuleList
             });
         }
     
