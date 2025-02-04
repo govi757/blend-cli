@@ -20,6 +20,7 @@ export default class BasicHelper {
         const dataModuleRegex = /data-module\s+(.+)/;
         const expressModuleRegex = /express-module\s+(\w+)(?:\(([^)]*)\))?/g;
         const rnModuleRegex = /rn-module\s+(\w+)(?:\(([^)]*)\))?/g;
+        const mongoModuleRegex = /mongo-module\s+(\w+)(?:\(([^)]*)\))?/g;
     
         const sections: IBasicSection[] = [];
         let match;
@@ -34,9 +35,9 @@ export default class BasicHelper {
     
             // Validate and extract the data-module for this section
             const dataModuleMatch = sectionBody.match(dataModuleRegex);
-            if (!dataModuleMatch) {
-                throw new Error(`Syntax error: Missing "data-module" in section "${sectionName}" at line ${lineNumber}.`);
-            }
+            // if (!dataModuleMatch) {
+            //     throw new Error(`Syntax error: Missing "data-module" in section "${sectionName}" at line ${lineNumber}.`);
+            // }
     
             // Extract and trim the data-module list for this section, splitting by commas
             const dataModuleList = dataModuleMatch[1]
@@ -61,20 +62,29 @@ export default class BasicHelper {
                 const name = emMatch[1];
                 return { name};
             });
+
+            const mongoModuleMatches = [...sectionBody.matchAll(mongoModuleRegex)];
+
+            const mongoModuleList = mongoModuleMatches.map(mongoMarch => {
+                console.log(mongoMarch,"rnModule")
+                const name = mongoMarch[1];
+                return { name}; 
+            })
     
             // Push the section with the full dataModuleList and expressModuleList
             sections.push({
                 name: sectionName,
                 dataModuleList,
                 expressModuleList,
-                rnModuleList
+                rnModuleList,
+                mongoModuleList
             });
         }
     
         if (sections.length === 0) {
             throw new Error("Syntax error: No valid sections found in the spec.");
         }
-    
+        FileHelper.ensureDir(this.configPath);
         FileHelper.writeFile(`${this.configPath}/basicConfig.json`, JSON.stringify({
             name: this.folderName,
             description: "Basic config for swing",

@@ -2,7 +2,7 @@ import path from 'path';
 import { FileHelper } from './fileHelper';
 const VALID_DATA_TYPES = ['string', 'number', 'boolean', 'any', 'object', 'array'];
 const VALID_KEYWORDS = ['module', 'section', 'api', 'input', 'output', 'authenticate', '}'];
-const VALID_CUSTOM_TYPE_REGEX = /^[A-Za-z_][A-Za-z0-9_]*->(?:[A-Za-z_][A-Za-z0-9_]*)(->(?:[A-Za-z_][A-Za-z0-9_]*))*$/;
+const VALID_CUSTOM_TYPE_REGEX = /^[A-Za-z_][A-Za-z0-9_]*(\[\])?->(?:[A-Za-z_][A-Za-z0-9_]*(\[\])?)(->(?:[A-Za-z_][A-Za-z0-9_]*(\[\])?))*$/;
 
 import { IApiSection, IApiSpec, ApiType, IApiMainSection, IExpressSection, IApiDataField } from '../types/apiOperationTypes';
 import { IBasicProject } from '../types/basicOperationTypes';
@@ -103,7 +103,7 @@ export default class ExpressHelper {
                     console.log('\x1b[31m%s\x1b[0m',`Invalid data type "${type}" at line ${lineNumber}: "${line}"`)
                     throw new Error(`Invalid data type "${type}" at line ${lineNumber}: "${line}"`);
                 } else {
-                    const dataArr = type.trim().split("->");
+                    const dataArr = type?.trim()?.split("->");
                     if(dataArr.length==2) {
                         
                         const dataJson: IDataSection[] = JSON.parse(FileHelper.readFile(`${this.configPath}/dataConfig.json`));
@@ -113,7 +113,7 @@ export default class ExpressHelper {
                             console.log('\x1b[31m%s\x1b[0m',`Data module not found"${dataArr[0]}" at line ${lineNumber}: "${line}"`)
                             throw new Error(`Data module not found"${dataArr[0]}" at line ${lineNumber}: "${line}"`);
                         }
-                        if(!currentDataModule?.dataList?.some(item => item.name == dataArr[1])) {
+                        if(!currentDataModule?.dataList?.some(item => item.name == dataArr[1].replace("[]",""))) {
                             throw new Error(`Data type ${dataArr[1]} not found in module "${dataArr[0]}" at line ${lineNumber}: "${line}"`);
                         }
 
@@ -126,7 +126,7 @@ export default class ExpressHelper {
     validateSpec(spec: string,sectionName: string): void {
         const lines = spec.split('\n').map(line => line.trim());
         try {
-            lines.forEach((line, index) => this.validateSpecLine(line, index + 1,sectionName));
+            // lines.forEach((line, index) => this.validateSpecLine(line, index + 1,sectionName));
         } catch (error: any) {
             console.error(`%c${error.message}`, 'color: red; font-weight: bold;');
             throw error; // Stop further execution on error
@@ -153,6 +153,9 @@ export default class ExpressHelper {
                     let currentSection: IApiSection | null = null;
 
                     for (const line of lines) {
+                        if (line.startsWith('//') || line === '') {
+                            continue;
+                        }
                         if (line.startsWith('section')) {
                             const sectionName = line.match(/section\s+(\w+)/)?.[1];
                             if (sectionName) {
@@ -176,6 +179,7 @@ export default class ExpressHelper {
                             const inputParams = inputMatch?.[1]?.split(',') || [];
                             const api = currentSection?.apiList[currentSection.apiList.length - 1];
                             inputParams.forEach(param => {
+                                console.log(param,"Input param is this")
                                 const [name, typeWithOptional] = param.split(':').map(p => p.trim());
                                 const type = typeWithOptional.replace('?', '');
                                 const required = !typeWithOptional.includes('?');
@@ -188,12 +192,18 @@ export default class ExpressHelper {
                             const outputParams = outputMatch?.[1]?.split(',') || [];
                             const api = currentSection?.apiList[currentSection.apiList.length - 1];
                             outputParams.forEach(param => {
-                                const [name, typeWithOptional] = param.split(':').map(p => p.trim());
-                                const type = typeWithOptional.replace('?', '');
-                                const required = !typeWithOptional.includes('?');
-                                if (api) {
-                                    api.output[name] = { type, required };
+                                if(!param.includes(":")) {
+                                    const required = !param.includes('?');
+                                    api.directOutput = {name:param,required};
+                                } else {
+                                    const [name, typeWithOptional] = param.split(':').map(p => p.trim());
+                                    const type = typeWithOptional.replace('?', '');
+                                    const required = !typeWithOptional.includes('?');
+                                    if (api) {
+                                        api.output[name] = { type, required };
+                                    }
                                 }
+                                
                             });
                         } else if (line.startsWith('authenticate')) {
                             const api = currentSection?.apiList[currentSection.apiList.length - 1];
@@ -384,6 +394,20 @@ ${apiCode}
                     
                 }
             })
+
+            outputKeyList.forEach(outputKey=>{
+                const typeParts = api.output[outputKey].type.split("->");
+                if (typeParts.length === 2) {
+                    const [module, typeName] = typeParts;
+                    const baseTypeName = typeName.endsWith("[]") ? typeName.slice(0, -2) : typeName;
+                    if(type==="api") {
+                        imports.add(`import { ${baseTypeName} } from '../data/${module}';`);
+                    } else {
+                        imports.add(`import { ${baseTypeName} } from '../../../data/${module}';`);
+                    }
+                    
+                }
+            })
             acc = acc + `
             
 ${inputKeyList.length > 0 ? `
@@ -437,12 +461,12 @@ export class ${inputDataTypeName} {
 
 ${outputKeyList.length > 0 ? `export class ${outputDataTypeName} {
    
-
+constructor(
   ${outputKeyList
                                 .map(
-                                    (inputKey) =>
-                                        `        public ${inputKey}: ${this.resolveType(api.input[inputKey].type)}${!api.input[inputKey].required ? '|undefined' : ''} = ${this.getDefaultValue(
-                                            api.input[inputKey]
+                                    (outputKey) =>
+                                        `        public ${outputKey}: ${this.resolveType(api.output[outputKey].type)}${!api.output[outputKey].required ? '|undefined' : ''} = ${this.getDefaultValue(
+                                            api.output[outputKey]
                                         )},`
                                 )
                                 .join('\n')}
@@ -455,14 +479,15 @@ ${outputKeyList.length > 0 ? `export class ${outputDataTypeName} {
                                 .join(',\n')}
             );
         }
-}
+
         
    toJSON():object {
             return {
     ${outputKeyList
                                 .map((outputKey) => this.generateToJSONField({...api.output[outputKey],name: outputKey}))
-                                .join(',\n')}
+                                .join('\n')}
         };
+        }
         }
 `: ''}
 
@@ -695,7 +720,9 @@ const packageJSON = {
     }
 }
 
-const envFileCode = "";
+const envFileCode = `
+
+`;
 
 const appTsCode = `
   import express from 'express';
@@ -728,7 +755,7 @@ app.use(json());
 dotenv.config({ path: ".env.\${process.env.NODE_ENV}" });
 mongoose.set('strictQuery', false);
 
-const runningMessage = "Server running ats http://localhost:\${port}";
+const runningMessage = "Server running ats http://localhost:"+port;
 app.get('/', (req: express.Request, res: express.Response) => {
     
     res.send("Hello World")

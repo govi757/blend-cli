@@ -4,6 +4,7 @@ export type IApiSpec = {
     input: IApiDataField;
     output: IApiDataField;
     authenticated?: boolean;
+    directOutput?: IApiDataField;
 };
 
 export type IApiMainSection = {

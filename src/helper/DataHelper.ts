@@ -102,6 +102,7 @@ export default class DataHelper {
         FileHelper.writeFile(`${this.configPath}/dataConfig.json`, JSON.stringify(sectionDataObjList));
     }
 
+
     parseJSONAndGenerateFiles() {
         try {
         const sectionDataList: IDataSection[] = JSON.parse(FileHelper.readFile(`${this.configPath}/dataConfig.json`));

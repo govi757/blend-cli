@@ -8,6 +8,7 @@ import ExpressHelper from './helper/ExpressHelper';
 import BasicHelper from './helper/BasicHelper';
 import RNHelper from './helper/RNHelper';
 import FrontEndApiHelper from './helper/FrontEndApiHelper';
+import MongoHelper from './helper/MongoHelper';
 
 const program = new Command();
 
@@ -80,10 +81,13 @@ program.command('prepare')
     const dataHelper = new DataHelper();
     const expressHelper= new ExpressHelper();
     const rnHelper = new RNHelper();
+    const mongoHelper = new MongoHelper();
     const basicFileContent = FileHelper.readFile(basicFilePath);
-    // dataHelper.doDataOperations(basicFileContent);
-    // expressHelper.doExpressOperations(basicFileContent);
+    dataHelper.doDataOperations(basicFileContent);
+    expressHelper.doExpressOperations(basicFileContent);
     rnHelper.doRNOperations();
+    mongoHelper.doMongoOperations(basicFileContent);
+    
 
     // Ensure the .basicConfig folder and its contents exist
     const basicConfigFolderPath = path.join(folderPath, '.basicConfig');
@@ -97,12 +101,12 @@ program.command('prepare')
     }
 
     // Check if the spec/data folder exists
-    const specDataFolderPath = path.join(folderPath, 'spec', 'data');
-    if (!FileHelper.exists(specDataFolderPath)) {
-      console.error(`The spec/data folder is missing.`);
-    } else {
-      console.log(`The spec/data folder exists.`);
-    }
+    // const specDataFolderPath = path.join(folderPath, 'spec', 'data');
+    // if (!FileHelper.exists(specDataFolderPath)) {
+    //   console.error(`The spec/data folder is missing.`);
+    // } else {
+    //   console.log(`The spec/data folder exists.`);
+    // }
 
     console.log(`Environment preparation complete.`);
   });
@@ -110,7 +114,7 @@ program.command('prepare')
 // Command 3: blend-generate (add your logic here)
 program.command('generate')
   .description('Generate files or configurations based on existing ones')
-  .action(() => {
+  .action(async () => {
     const folderPath = path.join(process.cwd());
     const folderName = path.basename(folderPath);
     const basicFilePath = path.join(folderPath, `${folderName}.basic`);
@@ -119,10 +123,15 @@ program.command('generate')
     const dataHelper = new DataHelper();
     const rnHelper = new RNHelper();
     const frontEndApiHelper = new FrontEndApiHelper();
+    const mongoHelper = new MongoHelper();
     expressHelper.doExpressGenerations(basicFileContent);
-    dataHelper.parseJSONAndGenerateFiles();
-    rnHelper.doRNGenerations();
-    frontEndApiHelper.doFrontEndApiGenerations();
+    mongoHelper.parseJSONAndGenerateFiles();
+    rnHelper.checkForFolderAndCreateReactNativeApp().then(res => {
+      dataHelper.parseJSONAndGenerateFiles();
+      rnHelper.doRNGenerations();
+      frontEndApiHelper.doFrontEndApiGenerations();
+    })
+    
     // SectionHelper.createProject(basicFileContent);
     // Add your custom logic here
   });
@@ -135,7 +144,7 @@ program.command('generate')
     const basicFilePath = path.join(folderPath, `${folderName}.basic`);
     const basicFileContent = FileHelper.readFile(basicFilePath);
     const basicHelper = new BasicHelper();
-    const rnHelper = new RNHelper();
+    // const rnHelper = new RNHelper();
 
     
     

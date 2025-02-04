@@ -3,6 +3,17 @@ import { IBasicProject, IBasicSection } from "../types/basicOperationTypes";
 import { FileHelper } from "./fileHelper";
 import path from 'path';
 
+const { execSync } = require('child_process');
+
+const runCommand = (command, cwd = process.cwd()) => {
+    try {
+        execSync(command, { stdio: 'inherit', cwd });
+    } catch (error) {
+        console.error(`Failed to execute command: ${command}`);
+        process.exit(1);
+    }
+};
+
 export default class RNHelper {
     basicFilePath: string;
     folderName: string;
@@ -41,6 +52,8 @@ export default class RNHelper {
             });
         });
     }
+
+
 
     parseScreenList(input: string): IFrontEndScreen[] {
         const screenRegex = /screen (.+?) under "(.+?)"/g;
@@ -166,9 +179,10 @@ export default class RNHelper {
         console.log(rnSectionList, "rnSectionList")
         rnSectionList.forEach(rnSection => {
             const rnFolderPath = path.join(this.folderPath, `module/${rnSection.name}/react-native`);
-            
+
             rnSection.rnModuleList.forEach(rnModule => {
-                this.buildLayouts(rnSection,rnModule);
+                // this.checkForFolderAndCreateReactNativeApp(rnFolderPath, rnModule.name).then(res => {
+                this.buildLayouts(rnSection, rnModule);
                 const rnProjectPath = path.join(rnFolderPath, rnModule.name);
                 rnModule.screenList.forEach(screen => {
                     const screenPath = `${rnProjectPath}/src/view/${screen.path}/`;
@@ -177,28 +191,90 @@ export default class RNHelper {
                     )
                 });
 
+                // })
+
 
             })
         })
     }
+    checkForFolderAndCreateReactNativeApp() {
+        return new Promise(async (checkRes) => {
+            const rnSectionList: IRNSection[] = JSON.parse(FileHelper.readFile(`${this.configPath}/rnConfig.json`));
+            const promises: Promise<void>[] = [];
+            rnSectionList.forEach(rnSection => {
+                const rnFolderPath = path.join(this.folderPath, `module/${rnSection.name}/react-native`);
+                FileHelper.ensureDir(rnFolderPath);
 
+                rnSection.rnModuleList.forEach(rnModule => {
+                    const modulePath = path.join(rnFolderPath, rnModule.name);
+                    if (!FileHelper.exists(modulePath)) {
+                        promises.push(new Promise(res => {
+                            runCommand(`npx @react-native-community/cli@latest init ${rnModule.name}`, rnFolderPath);
+                            runCommand(`npm install -D @tsconfig/react-native @types/jest @types/react @types/react-test-renderer typescript`, modulePath);
+
+                            const dependencies = [
+                                '@react-navigation/bottom-tabs',
+                                '@react-navigation/drawer',
+                                '@react-navigation/material-top-tabs',
+                                '@react-navigation/native',
+                                '@react-navigation/native-stack',
+                                '@reduxjs/toolkit',
+                                'react-native-gesture-handler',
+                                'react-native-pager-view',
+                                'react-native-reanimated',
+                                'react-native-safe-area-context',
+                                'react-native-screens',
+                                'react-native-web',
+                                'react-redux',
+                                'redux-saga',
+                                "axios"
+                              ];
+                              runCommand(`npm install ${dependencies.join(' ')}`, modulePath);
+                              FileHelper.writeFile(`${modulePath}/tsconfig.json`,`{
+                                "extends": "@tsconfig/react-native/tsconfig.json"
+                                }`);
+
+                                FileHelper.writeFile(`${modulePath}/App.tsx`,mainAppcode)
+                                
+                            
+                        }))
+                    }
+                })
+            })
+            await Promise.all(promises);
+            checkRes(true)
+
+        })
+
+        // return new Promise(res => {
+        //     const modulePath = path.join(rnProjectPath, projectName);
+        //     if(!FileHelper.exists(modulePath)) {
+        //         runCommand(`npx @react-native-community/cli@latest init ${projectName}`,rnProjectPath);
+        //         res(true);
+        //     } else {
+        //         res(true)
+        //     }
+        // });
+
+
+    }
     buildLayouts(rnSection: IRNSection, rnModule: IRNModule) {
         const rnFolderPath = path.join(this.folderPath, `module/${rnSection.name}/react-native`);
         // const path = `${projectPath}/frontend/${frontEnd.name}/src/layout`;
         const rnLayoutPath = path.join(rnFolderPath, rnModule.name);
         // rnModule.layout.forEach(lo => {
         const lo: IRNLayout = {
-            name:"BlendGenerated",
+            name: "BlendGenerated",
             route: "/",
             children: rnModule.layout,
-            type:"Stack",
+            type: "Stack",
         }
-            this.traverseChildrenAndCreateLayout(rnLayoutPath, lo, rnModule);
-            FileHelper.createFile(`${rnLayoutPath}/src/layout/${lo.name}Layout.tsx`, `
+        this.traverseChildrenAndCreateLayout(rnLayoutPath, lo, rnModule);
+        FileHelper.createFile(`${rnLayoutPath}/src/layout/${lo.name}Layout.tsx`, `
 ${this.generateLayoutCode(lo, rnModule)}
 `)
 
-            FileHelper.writeFile(`${rnLayoutPath}/src-gen/router/config/${lo.name}LayoutConfig.tsx`, `
+        FileHelper.writeFile(`${rnLayoutPath}/src-gen/router/config/${lo.name}LayoutConfig.tsx`, `
     ${this.generateLayoutCodeInterface(lo)}
     `)
         // })
@@ -219,46 +295,46 @@ ${this.generateLayoutCode(loChild, frontEnd)}
         })
     }
 
-   
+
     generateRouterConstant(children: IRNLayout[]) {
         let path = '';
         const routeObj = generateRouterConstantObj(children);
         function generateRouterConstantObj(children: IRNLayout[]): any {
-            
-        return children.reduce((acc: any,child: any,index: number) => {
-            if(child.children) {
-                // path = path+"/"+child.route;
-                console.log(path,"Path With layout")
-                path = child.route&&child.route!=""&&child.route!="/"?path+"/"+child.route:path;
-                acc[child.name] = generateRouterConstantObj(child.children);
-                console.log(child.name,index,children.length,"Path With layout After")
-                if(index==children.length-1) {
-                    path = path.split("/").slice(0,-1).join('/').toString();
-                    // const pathNumToBeRemoved = child.route.split("/").length;
-                    // path = path.split("/").slice(0,-pathNumToBeRemoved).join('/').toString();
-                }
-            } else {
-                path = child.route&&child.route!=""&&child.route!="/"?path+"/"+child.route:path;
-                acc[child.name] = path;
-                console.log(path,"Path Without layout")
-                const pathNumToBeRemoved = child.route.split("/").length;
-                console.log(pathNumToBeRemoved,index,children.length,"pathNumToBeRemoved..............")
-                    path = path.split("/").slice(0,-pathNumToBeRemoved).join('/').toString();
-                
-                if(index==children.length-1) {
-                    path = path.split("/").slice(0,-1).join('/').toString();
-                    // const pathNumToBeRemoved = child.route.split("/").length;
-                    // path = path.split("/").slice(0,-pathNumToBeRemoved).join('/').toString();
-                }
-                
-            }
-            
-            return acc;
-        },{})
-    }
 
-    return JSON.stringify(routeObj);
-}
+            return children.reduce((acc: any, child: any, index: number) => {
+                if (child.children) {
+                    // path = path+"/"+child.route;
+                    console.log(path, "Path With layout")
+                    path = child.route && child.route != "" && child.route != "/" ? path + "/" + child.route : path;
+                    acc[child.name] = generateRouterConstantObj(child.children);
+                    console.log(child.name, index, children.length, "Path With layout After")
+                    if (index == children.length - 1) {
+                        path = path.split("/").slice(0, -1).join('/').toString();
+                        // const pathNumToBeRemoved = child.route.split("/").length;
+                        // path = path.split("/").slice(0,-pathNumToBeRemoved).join('/').toString();
+                    }
+                } else {
+                    path = child.route && child.route != "" && child.route != "/" ? path + "/" + child.route : path;
+                    acc[child.name] = path;
+                    console.log(path, "Path Without layout")
+                    const pathNumToBeRemoved = child.route.split("/").length;
+                    console.log(pathNumToBeRemoved, index, children.length, "pathNumToBeRemoved..............")
+                    path = path.split("/").slice(0, -pathNumToBeRemoved).join('/').toString();
+
+                    if (index == children.length - 1) {
+                        path = path.split("/").slice(0, -1).join('/').toString();
+                        // const pathNumToBeRemoved = child.route.split("/").length;
+                        // path = path.split("/").slice(0,-pathNumToBeRemoved).join('/').toString();
+                    }
+
+                }
+
+                return acc;
+            }, {})
+        }
+
+        return JSON.stringify(routeObj);
+    }
 
     generateLayoutCode(lo: IRNLayout, frontEnd: IRNModule) {
         const layoutChildName = lo.type == "Stack" ? `${lo.name}LayoutStack` : lo.type == "Drawer" ? `${lo.name}LayoutDrawer` : lo.type == "BottomTab" ? `${lo.name}LayoutBottomTab` : `${lo.name}LayoutTopTab`
@@ -280,7 +356,7 @@ const ${lo.name}Layout = () => {
         <${lo.name}LayoutNavigator>
             ${lo.children.reduce((acc, item) => {
                 acc = acc + `
-                    <${layoutChildName}.Screen component={${item.element ? item.element : `${item.name}Layout`}} name={'${item.name}'}></${layoutChildName}.Screen>\n
+                    <${layoutChildName}.Screen component={${item.element ? item.element : `${item.name}Layout`}} name={'${item.element ? item.name : `${item.name}Layout`}'}></${layoutChildName}.Screen>\n
                     `
                 return acc;
             }, "")
@@ -363,7 +439,7 @@ export default ${lo.name}Layout;
         `
     }
 
-    
+
 
     findScreenPath(screenList: IFrontEndScreen[], screenName: string) {
         const index = screenList.findIndex(screen => screen.name === screenName);
@@ -379,3 +455,26 @@ export default ${lo.name}Layout;
 
 
 }
+
+
+const mainAppcode = `
+
+import React from 'react';
+
+
+import { NavigationContainer } from '@react-navigation/native';
+import BlendGeneratedLayout from './src/layout/BlendGeneratedLayout';
+function App(): React.JSX.Element {
+  
+
+  return (
+    <NavigationContainer>
+      <BlendGeneratedLayout />
+    </NavigationContainer>
+  );
+}
+
+
+export default App;
+
+`
