@@ -40,10 +40,14 @@ export default class BasicHelper {
             // }
     
             // Extract and trim the data-module list for this section, splitting by commas
-            const dataModuleList = dataModuleMatch[1]
+            let dataModuleList = [];
+            if(dataModuleMatch) {
+                dataModuleList = dataModuleMatch[1]
                 .split(",")
                 .map((m) => m.trim())
                 .filter((dm) => dm); // Filter out empty values
+            }
+            
     
             // Validate and extract express modules
             const expressModuleMatches = [...sectionBody.matchAll(expressModuleRegex)];

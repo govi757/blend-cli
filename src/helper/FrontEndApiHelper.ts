@@ -269,7 +269,7 @@ export const GeneratedReducers = {
             const inputKeyList = Object.keys(curVal.input);
             const outputKeyList = Object.keys(curVal.output);
             const inputDataTypeName: string = (`${apiSection.name}_${curVal.name}_Input`).toUpperCase();
-            const outputDataTypeName: string = (`${apiSection.name}_${curVal.name}_Output,${apiSection.name}_${curVal.name}_Output`).toUpperCase();
+            const outputDataTypeName: string = (`${apiSection.name}_${curVal.name}_Output`).toUpperCase();
             acc = acc + `${inputKeyList.length > 0 ? inputDataTypeName + ',' : ''}`;
             acc = acc + `${outputKeyList.length > 0 ? outputDataTypeName + ',' : ''}`;
             return acc
@@ -315,7 +315,7 @@ export const GeneratedReducers = {
         
 
               export const ${curVal.name}Api = async (${inputKeyList.length > 0 ? `input: ${inputDataTypeName},` : ``} ) => {
-                  return ${expressSection.name}Api.${curVal.type}('${this.getApiName(apiSection.name)}/${this.getApiName(curVal.name)}',${inputKeyList.length > 0 ? `${curVal.type == 'post' ? 'input' : '{params: input.toJSON()}'}` : ''});
+                  return ${expressSection.name}Api.${curVal.type}('${this.getApiName(expressSection.name)}/${this.getApiName(apiSection.name)}/${this.getApiName(curVal.name)}',${inputKeyList.length > 0 ? `${curVal.type == 'post' ? 'input' : '{params: input.toJSON()}'}` : ''});
               }
 
               export const call${this.capitalizeFirstLetter(curVal.name)}Api = async (${inputKeyList.length > 0 ? `input: ${inputDataTypeName},` : ``} output: (output: ${outputKeyList.length > 0 ? outputDataTypeName :dataName?dataName: 'any'}) => any,error: (errMsg: any) => void) => {
@@ -384,7 +384,7 @@ export default genRootSaga;
     }
 
     getApiName(apiName: string) {
-        return apiName?.replace(/([a-z])([A-Z])/g, '$1-$2').toLowerCase();;
+        return apiName.replace(/[A-Z]/g, m => "-" + m.toLowerCase()).replace(/^-/, '');
     }
 
     capitalizeFirstLetter(val: string) {

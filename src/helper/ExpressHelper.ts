@@ -234,86 +234,91 @@ export default class ExpressHelper {
         apiMainSectionList.forEach(sectionApi => {
             const mainSectionPath = path.join(this.folderPath, `module/${sectionApi.name}`);
             sectionApi.expressSectionList.forEach(expressSection => {
-                const expressPath = path.join(mainSectionPath, `${expressSection.name}`);
+                const expressPath = path.join(mainSectionPath, `express/${sectionApi.name}`);
                 expressSection.apiSectionList.forEach(apiSection => {
                     // const apiPath = ``
-                    this.writeApi(apiSection, expressPath);
-                    this.writeInterfaceCode(apiSection, expressPath)
-                    this.writeApiDatacode(apiSection, expressPath);
-                    this.writeRouteCode(apiSection, expressPath);
+                    this.writeApi(apiSection, expressPath,expressSection);
+                    this.writeInterfaceCode(apiSection, expressPath,expressSection)
+                    this.writeApiDatacode(apiSection, expressPath,expressSection);
+                    this.writeRouteCode(apiSection, expressPath,expressSection);
                 })
             })
         })
     }
 
-    writeApi(apiSection: IApiSection, expressPath: string) {
-        const apiCode = this.generateApiCode(apiSection);
-        const apiPath = `${expressPath}/src/services`;
+    writeApi(apiSection: IApiSection, expressPath: string, expressSection: IExpressSection) {
+        const apiCode = this.generateApiCode(apiSection,expressSection);
+        const apiPath = `${expressPath}/src/services/${expressSection.name}`;
         const fileName = `${apiSection.name}/${apiSection.name}.service.ts`
         FileHelper.createFile(`${apiPath}/${fileName}`, apiCode);
     }
 
 
-    writeInterfaceCode(apiSection: IApiSection, expressPath: string) {
-        const interfacePath = `${expressPath}/src-gen/api-interfaces`;
+    writeInterfaceCode(apiSection: IApiSection, expressPath: string,expressSection: IExpressSection) {
+        const interfacePath = `${expressPath}/src-gen/api-interfaces/${expressSection.name}`;
         const fileName = `${apiSection.name}.interface.ts`
-        const code = this.generateApiInterfaceCode(apiSection);
+        const code = this.generateApiInterfaceCode(apiSection,expressSection);
         FileHelper.writeFile(`${interfacePath}/${fileName}`, code);
     }
 
-    writeApiDatacode(apiSection: IApiSection, expressPath: string) {
-        const dataPath = `${expressPath}/src-gen/api-data`;
+    writeApiDatacode(apiSection: IApiSection, expressPath: string,expressSection: IExpressSection) {
+        const dataPath = `${expressPath}/src-gen/api-data/${expressSection.name}`;
         const fileName = `${apiSection.name}.data.ts`
         const code = this.generateSampleApiDataCode(apiSection);
         FileHelper.writeFile(`${dataPath}/${fileName}`, code);
     }
 
-    writeRouteCode(apiSection: IApiSection, expressPath: string) {
-        const dataPath = `${expressPath}/src-gen/api-routes`;
+    writeRouteCode(apiSection: IApiSection, expressPath: string,expressSection: IExpressSection) {
+        const dataPath = `${expressPath}/src-gen/api-routes/${expressSection.name}`;
         const fileName = `${apiSection.name}.routes.ts`
-        const code = this.generateRoutesCode(apiSection);
+        const code = this.generateRoutesCode(apiSection,expressSection);
         FileHelper.writeFile(`${dataPath}/${fileName}`, code);
     }
 
 
     createExpressProject() {
-        const sectionRegex = /section\s+([a-zA-Z0-9_]+)\s*{([^}]*)}/g; // Match entire section
-        const dataModuleRegex = /express-module\s+([a-zA-Z0-9,]+)/; // Match data-module line
-
-        let match;
-        while ((match = sectionRegex.exec(this.basicFileContent)) !== null) {
-            const sectionName = match[1].trim();
-            const sectionContent = match[2].trim();
-
-            // Check for data-module within the section content
-            const dataMatch = dataModuleRegex.exec(sectionContent);
-            if (dataMatch) {
-                const modules = dataMatch[1]
-                    .split(',')
-                    .map(module => module.trim()); // Normalize module names
-
-                // Path for the section folder inside `spec`
-                const sectionFolderPath = path.join(this.folderPath, 'spec', sectionName);
-
-                // Ensure the section folder and its data subfolder exist
-                const apiFolderPath = path.join(sectionFolderPath, 'api');
-                FileHelper.ensureDir(apiFolderPath);
-
-                // Create .data files for each module
-                modules.forEach(module => {
-
-                    this.createProject(sectionName, module);
-
-                });
+        this.basicProjectContent.sectionList.forEach(section => {
+            if(section.expressModuleList&&section.expressModuleList.length>0) {
+                this.createProject(section.name, section.name);
             }
-        }
+        })
+        // const sectionRegex = /section\s+([a-zA-Z0-9_]+)\s*{([^}]*)}/g; // Match entire section
+        // const dataModuleRegex = /express-module\s+([a-zA-Z0-9,]+)/; // Match data-module line
+
+        // let match;
+        // while ((match = sectionRegex.exec(this.basicFileContent)) !== null) {
+        //     const sectionName = match[1].trim();
+        //     const sectionContent = match[2].trim();
+
+        //     // Check for data-module within the section content
+        //     const dataMatch = dataModuleRegex.exec(sectionContent);
+        //     if (dataMatch) {
+        //         const modules = dataMatch[1]
+        //             .split(',')
+        //             .map(module => module.trim()); // Normalize module names
+
+        //         // Path for the section folder inside `spec`
+        //         const sectionFolderPath = path.join(this.folderPath, 'spec', sectionName);
+
+        //         // Ensure the section folder and its data subfolder exist
+        //         const apiFolderPath = path.join(sectionFolderPath, 'api');
+        //         FileHelper.ensureDir(apiFolderPath);
+
+        //         // Create .data files for each module
+        //         modules.forEach(module => {
+
+        //             this.createProject(sectionName, module);
+
+        //         });
+        //     }
+        // }
     }
 
     createProject(sectionName: string, projectName: string) {
         const folderPath = process.cwd(); // Current working directory
 
         // Path for the section folder inside `spec`
-        const sectionFolderPath = path.join(folderPath, `module/${sectionName}`, projectName);
+        const sectionFolderPath = path.join(folderPath, `module/${sectionName}/express`, projectName);
         const packageFilePath = path.join(sectionFolderPath, "package.json");
         const tsConfigFilePath = path.join(sectionFolderPath, "tsconfig.json");
         const appTsPath = path.join(sectionFolderPath, "src/app.ts");
@@ -336,7 +341,7 @@ export default class ExpressHelper {
 
 
 
-    generateApiInterfaceCode(apiSection: IApiSection) {
+    generateApiInterfaceCode(apiSection: IApiSection,expressSection: IExpressSection) {
         const interfaceName: string = `I${apiSection.name}Api`;
         const sectionName: string = `${apiSection.name}Service`;
         const apiCode = this.generateApiFunctionCodes(apiSection);
@@ -351,7 +356,7 @@ ${totalInputs > 0 ? `
             const inputName: string = (`${apiSection.name}_${currVal.name}_Input`).toUpperCase();
             acc = acc + `${(Object.keys(currVal.input).length > 0) ? `${inputName},` : ''}`;
             return acc
-        }, '')}} from '../api-data/${apiSection.name}.data';
+        }, '')}} from '../../api-data/${expressSection.name}/${apiSection.name}.data';
     `: ``}
 
 export interface ${interfaceName} {
@@ -389,7 +394,7 @@ ${apiCode}
                     if(type==="api") {
                         imports.add(`import { ${baseTypeName} } from '../data/${module}';`);
                     } else {
-                        imports.add(`import { ${baseTypeName} } from '../../../data/${module}';`);
+                        imports.add(`import { ${baseTypeName} } from '../../../../data/${module}';`);
                     }
                     
                 }
@@ -403,7 +408,7 @@ ${apiCode}
                     if(type==="api") {
                         imports.add(`import { ${baseTypeName} } from '../data/${module}';`);
                     } else {
-                        imports.add(`import { ${baseTypeName} } from '../../../data/${module}';`);
+                        imports.add(`import { ${baseTypeName} } from '../../../../data/${module}';`);
                     }
                     
                 }
@@ -498,17 +503,17 @@ constructor(
         `
         return code
     }
-    generateApiCode(apiSection: IApiSection) {
+    generateApiCode(apiSection: IApiSection,expressSection: IExpressSection) {
         const serviceName = `${apiSection.name}Service`;
         const interfaceName = `I${apiSection.name}Api`;
         const code = `
     import express from 'express';\n
-    import { ${interfaceName} } from '../../../src-gen/api-interfaces/${apiSection.name}.interface';\n
+    import { ${interfaceName} } from '../../../../src-gen/api-interfaces/${expressSection.name}/${apiSection.name}.interface';\n
 ${apiSection.apiList.length > 0 ? `import {${apiSection.apiList.reduce((acc: string, currVal) => {
             const inputName: string = (`${apiSection.name}_${currVal.name}_Input`).toUpperCase();
             acc = acc + inputName + ',';
             return acc
-        }, '')}} from '../../../src-gen/api-data/${apiSection.name}.data';` : ''}
+        }, '')}} from '../../../../src-gen/api-data/${expressSection.name}/${apiSection.name}.data';` : ''}
 
 export default class ${serviceName} implements ${interfaceName} {
     ${this.generateApiFunctionCodes(apiSection)
@@ -537,7 +542,7 @@ export default class ${serviceName} implements ${interfaceName} {
         }, "")
     }
 
-    generateRoutesCode(apiSection: IApiSection) {
+    generateRoutesCode(apiSection: IApiSection,expressSection: IExpressSection) {
         const className = `${apiSection.name}Routes`;
         const serviceName = `${apiSection.name}Service`;
         const totalInputs = apiSection.apiList.reduce((acc: number, currVal) => {
@@ -545,16 +550,16 @@ export default class ${serviceName} implements ${interfaceName} {
             return acc
         }, 0);
         const code = `
-    import { CommonRoutesConfig } from '../../src/routes/common/common.routes.config';
-    import ${serviceName} from '../../src/services/${apiSection.name}/${apiSection.name}.service';
+    import { CommonRoutesConfig } from '../../../src/routes/common/common.routes.config';
+    import ${serviceName} from '../../../src/services/${expressSection.name}/${apiSection.name}/${apiSection.name}.service';
     import express from 'express';
-    import verifyToken from '../../src/middlewares/auth';
+    import verifyToken from '../../../src/middlewares/auth';
     ${totalInputs > 0 ? `
         ${apiSection.apiList.length > 0 ? `import {${apiSection.apiList.reduce((acc: string, currVal) => {
             const inputName: string = (`${apiSection.name}_${currVal.name}_Input`).toUpperCase();
             acc = acc + `${Object.keys(currVal.input).length > 0 ? `${inputName + ','}` : ``}`;
             return acc
-        }, '')}} from '../api-data/${apiSection.name}.data';` : ''}
+        }, '')}} from '../../api-data/${expressSection.name}/${apiSection.name}.data';` : ''}
         `: ``}
     
 
@@ -570,18 +575,18 @@ export default class ${serviceName} implements ${interfaceName} {
             const inputName: string = (`${apiSection.name}_${currVal.name}_Input`).toUpperCase();
 
             acc = acc + `
-                    this.app.route('/${this.baseRoute}/${this.getApiName(apiSection.name)}/${this.getApiName(currVal.name)}').${currVal.type}(${currVal.authenticated === true ? 'verifyToken,' : ''}async (req: express.Request, res: express.Response) => {
+                    this.app.route('/${this.getApiName(expressSection.name)}/${this.getApiName(apiSection.name)}/${this.getApiName(currVal.name)}').${currVal.type}(${currVal.authenticated === true ? 'verifyToken,' : ''}async (req: express.Request, res: express.Response) => {
                         ${Object.keys(currVal.input).length > 0 ?
                     ` const input: ${inputName} = ${inputName}.fromJSON(${currVal.type == ApiType.Get ? 'req.query' : 'req.body'});
                             const defaultPreCondition = input.checkDefaultPreCondition();
                             if(defaultPreCondition.isValid) {
-                            this.${serviceName}.${currVal.name}(${currVal.authenticated === true ? `(req as any).user,` : ''}input, res);
+                            this.${serviceName}.${currVal.name}(${currVal.authenticated === true ? `(req as any),` : ''}input, res);
                             } else {
                                 res.status(412).send(defaultPreCondition.errorBody)
                             }`
                     : `
                             
-                            this.${serviceName}.${currVal.name}(${currVal.authenticated === true ? `(req as any).user,` : ''}res);
+                            this.${serviceName}.${currVal.name}(${currVal.authenticated === true ? `(req as any),` : ''}res);
                             
                             `
                 }
@@ -602,7 +607,7 @@ export default class ${serviceName} implements ${interfaceName} {
 
 
     getApiName(apiName: string) {
-        return apiName.replace(/([a-z])([A-Z])/g, '$1-$2').toLowerCase();;
+        return apiName.replace(/[A-Z]/g, m => "-" + m.toLowerCase()).replace(/^-/, '');
     }
 
     resolveType(type: string): string {
