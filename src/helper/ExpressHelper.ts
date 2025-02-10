@@ -234,7 +234,7 @@ export default class ExpressHelper {
         apiMainSectionList.forEach(sectionApi => {
             const mainSectionPath = path.join(this.folderPath, `module/${sectionApi.name}`);
             sectionApi.expressSectionList.forEach(expressSection => {
-                const expressPath = path.join(mainSectionPath, `express/${sectionApi.name}`);
+                const expressPath = path.join(mainSectionPath, `express/${sectionApi.name}-api`);
                 expressSection.apiSectionList.forEach(apiSection => {
                     // const apiPath = ``
                     this.writeApi(apiSection, expressPath,expressSection);
@@ -279,7 +279,7 @@ export default class ExpressHelper {
     createExpressProject() {
         this.basicProjectContent.sectionList.forEach(section => {
             if(section.expressModuleList&&section.expressModuleList.length>0) {
-                this.createProject(section.name, section.name);
+                this.createProject(section.name, `${section.name}-api`);
             }
         })
         // const sectionRegex = /section\s+([a-zA-Z0-9_]+)\s*{([^}]*)}/g; // Match entire section

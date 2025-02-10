@@ -172,7 +172,7 @@ export default class DataHelper {
                     section.expressModuleList.forEach(expressModule => {
                         // if (expressModule.includedDataModuleList.includes(moduleData.name)) {
                         if(section.name==sectionData.name) {
-                            const expressDataPath = `${this.folderPath}/module/${section.name}/${expressModule.name}/src-gen/data/${moduleData.name}.ts`
+                            const expressDataPath = `${this.folderPath}/module/${section.name}/express/${expressModule.name}-api/src-gen/data/${moduleData.name}.ts`
                             FileHelper.writeFile(expressDataPath, finalCode);
                         }
                             

@@ -18,7 +18,8 @@ export default class BasicHelper {
     parseSpec(spec: string) {
         const sectionRegex = /section\s+(\w+)\s*\{([^}]+)\}/g;
         const dataModuleRegex = /data-module\s+(.+)/;
-        const expressModuleRegex = /express-module\s+(\w+)(?:\(([^)]*)\))?/g;
+        // const expressModuleRegex = /express-module\s+(\w+)(?:\(([^)]*)\))?/g;
+        const expressModuleRegex =/express-module\s+(.+)/;
         const rnModuleRegex = /rn-module\s+(\w+)(?:\(([^)]*)\))?/g;
         const mongoModuleRegex = /mongo-module\s+(\w+)(?:\(([^)]*)\))?/g;
     
@@ -47,17 +48,29 @@ export default class BasicHelper {
                 .map((m) => m.trim())
                 .filter((dm) => dm); // Filter out empty values
             }
+
+            let expressModuleList = [];
+            let expressModuleMatch = sectionBody.match(expressModuleRegex);
+            if(expressModuleMatch) {
+                expressModuleList = expressModuleMatch[1]
+                .split(",")
+                .map((m) => m.trim())
+                .filter((dm) => dm)
+                .map(item => {return {name: item}})
+                ; // Filter out empty values
+            }
             
     
             // Validate and extract express modules
-            const expressModuleMatches = [...sectionBody.matchAll(expressModuleRegex)];
-            const expressModuleList = expressModuleMatches.map((emMatch) => {
-                const name = emMatch[1];
-                const includedDataModules = emMatch[2]
-                    ? emMatch[2].split(",").map((m) => m.trim())
-                    : [];
-                return { name, includedDataModuleList: includedDataModules };
-            });
+            // const expressModuleMatches = [...sectionBody.matchAll(expressModuleRegex)];
+            // const expressModuleList = expressModuleMatches.map((emMatch) => {
+            //     console.log(emMatch,"emMatch")
+            //     const name = emMatch[1];
+            //     const includedDataModules = emMatch[2]
+            //         ? emMatch[2].split(",").map((m) => m.trim())
+            //         : [];
+            //     return { name, includedDataModuleList: includedDataModules };
+            // });
 
             const rnModuleMatches = [...sectionBody.matchAll(rnModuleRegex)];
             console.log(rnModuleMatches,"rnModuleList")
