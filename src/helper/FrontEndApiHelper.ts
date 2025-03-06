@@ -1,6 +1,7 @@
 import { IApiMainSection, IApiSection, IExpressSection } from "../types/apiOperationTypes";
 import { IBasicProject, IBasicSection } from "../types/basicOperationTypes";
 import { IDataSection } from "../types/dataOperationTypes";
+import { IRNSection } from "../types/frontendOperationTypes";
 import ExpressHelper from "./ExpressHelper";
 import { FileHelper } from "./fileHelper";
 import path from 'path';
@@ -261,11 +262,17 @@ export const GeneratedReducers = {
     }
 
     generateApiActioncode(apiSection: IApiSection, expressSection: IExpressSection) {
+        const filteredApiListForData = apiSection.apiList.filter(api => {
+            const inputKeyList = Object.keys(api.input);
+            const outputKeyList = Object.keys(api.output);
+            return inputKeyList.length>0||outputKeyList.length>0
+        })
+        console.log(filteredApiListForData,"filteredApiListForDatafilteredApiListForData")
         const code = `
         import { createAsyncThunk } from "@reduxjs/toolkit";
         import axios, { AxiosError } from 'axios';
         import {${expressSection.name}Api} from "../../../../src/remote-api-point";
-        import { ${apiSection.apiList.reduce((acc, curVal) => {
+        ${filteredApiListForData.length>0?`import { ${filteredApiListForData.reduce((acc, curVal) => {
             const inputKeyList = Object.keys(curVal.input);
             const outputKeyList = Object.keys(curVal.output);
             const inputDataTypeName: string = (`${apiSection.name}_${curVal.name}_Input`).toUpperCase();
@@ -273,7 +280,7 @@ export const GeneratedReducers = {
             acc = acc + `${inputKeyList.length > 0 ? inputDataTypeName + ',' : ''}`;
             acc = acc + `${outputKeyList.length > 0 ? outputDataTypeName + ',' : ''}`;
             return acc
-        }, '')} } from "./data";
+        }, '')} } from "./data";`:''}
 
           ${apiSection.apiList.reduce((acc, curVal) => {
             if (curVal?.directOutput?.name) {

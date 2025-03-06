@@ -9,6 +9,8 @@ import BasicHelper from './helper/BasicHelper';
 import RNHelper from './helper/RNHelper';
 import FrontEndApiHelper from './helper/FrontEndApiHelper';
 import MongoHelper from './helper/MongoHelper';
+import ReactHelper from './helper/ReactHelper';
+import FrontEndReactApiHelper from './helper/FrontEndReactApiHelper';
 
 const program = new Command();
 
@@ -79,15 +81,17 @@ program.command('prepare')
       return;
     }
     const dataHelper = new DataHelper();
-    const expressHelper= new ExpressHelper();
+    const expressHelper = new ExpressHelper();
     const rnHelper = new RNHelper();
+    const reactHelper = new ReactHelper();
     const mongoHelper = new MongoHelper();
     const basicFileContent = FileHelper.readFile(basicFilePath);
     dataHelper.doDataOperations(basicFileContent);
     expressHelper.doExpressOperations(basicFileContent);
     rnHelper.doRNOperations();
+    reactHelper.doReactOperations();
     mongoHelper.doMongoOperations(basicFileContent);
-    
+
 
     // Ensure the .basicConfig folder and its contents exist
     const basicConfigFolderPath = path.join(folderPath, '.basicConfig');
@@ -122,21 +126,28 @@ program.command('generate')
     const expressHelper = new ExpressHelper();
     const dataHelper = new DataHelper();
     const rnHelper = new RNHelper();
+    const reactHelper = new ReactHelper();
     const frontEndApiHelper = new FrontEndApiHelper();
+    const frontEndReactApiHelper = new FrontEndReactApiHelper();
     const mongoHelper = new MongoHelper();
     expressHelper.doExpressGenerations(basicFileContent);
     mongoHelper.parseJSONAndGenerateFiles();
     rnHelper.checkForFolderAndCreateReactNativeApp().then(res => {
-      dataHelper.parseJSONAndGenerateFiles();
-      rnHelper.doRNGenerations();
-      frontEndApiHelper.doFrontEndApiGenerations();
+      reactHelper.checkForFolderAndCreateReactApp().then(res => {
+        dataHelper.parseJSONAndGenerateFiles();
+        rnHelper.doRNGenerations();
+        frontEndApiHelper.doFrontEndApiGenerations();
+        frontEndReactApiHelper.doFrontEndApiGenerations();
+        reactHelper.doReactGenerations()
+      })
+
     })
-    
+
     // SectionHelper.createProject(basicFileContent);
     // Add your custom logic here
   });
 
-  program.command('cook')
+program.command('cook')
   .description('Generate files or configurations based on existing ones')
   .action(() => {
     const folderPath = path.join(process.cwd());
@@ -146,8 +157,8 @@ program.command('generate')
     const basicHelper = new BasicHelper();
     // const rnHelper = new RNHelper();
 
-    
-    
+
+
     basicHelper.parseSpec(basicFileContent);
     // rnHelper.parseSpec(basicFileContent);
     // SectionHelper.createProject(basicFileContent);

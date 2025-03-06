@@ -2,6 +2,7 @@ import path from 'path';
 import { FileHelper } from './fileHelper';
 import { IDataField, IDataModule, IDataSection } from '../types/dataOperationTypes';
 import { IBasicProject, IBasicSection } from '../types/basicOperationTypes';
+import BlendDataGrammarHelper from './grammarHelper/BlendDataGrammarHelper';
 const basicDataTypes = ["string","object","boolean","number","any"];
 export default class DataHelper {
     basicFilePath: string;
@@ -51,55 +52,26 @@ export default class DataHelper {
             const sectionName = section.name;
             const sectionFolderPath = path.join(this.folderPath, 'spec', sectionName);
             let mainDataObjList = [];
+            
             const dataFolderPath = path.join(sectionFolderPath, 'data');
-            console.log(dataFolderPath, "dataFolderPath")
             section.dataModuleList.forEach(module => {
                 const filePath = path.join(dataFolderPath, `${module}.data`);
                 const specCode = FileHelper.readFile(filePath)
-                const dataRegex = /data\s+([a-zA-Z0-9_]+)\(\s*([\s\S]*?)\)/g;
-                let dataMatch;
-                let moduleDataObjList: any[] = [];
-
-                while ((dataMatch = dataRegex.exec(specCode)) !== null) {
-                    const dataName = dataMatch[1];
-                    const fields = dataMatch[2]
-                        .split(',')
-                        .map((field) => field.trim())
-                        .filter((field) => field) // Remove empty fields
-                        .map((field) => {
-                            const [name, typeWithRequired] = field.split(':').map((s) => s.trim());
-                            const isRequired = !typeWithRequired.endsWith('?');
-                            const type = isRequired
-                                ? typeWithRequired
-                                : typeWithRequired.slice(0, -1);
-
-                            return {
-                                name,
-                                type,
-                                required: isRequired,
-                            };
-                        });
-
-                    const dataObj = {
-                        name: dataName,
-                        fields
-                    }
-                    moduleDataObjList.push(dataObj);
+                const json = new BlendDataGrammarHelper().parseBlendData(specCode);
+                if(!json.valid) {
+                    throw new Error("Error while parsing the syntax")
                 }
-                const moduleDataObj = {
-                    name: module,
-                    dataList: moduleDataObjList
-                }
-                mainDataObjList.push(moduleDataObj);
+                const moduleDataObject = json.moduleDataObject
+                mainDataObjList.push(moduleDataObject)
+                
             })
-            let sectionObj = {
+            sectionDataObjList.push({
                 name: sectionName,
                 sectionDataList: mainDataObjList
-            }
-
-            sectionDataObjList.push(sectionObj);
+            });
         });
-        FileHelper.writeFile(`${this.configPath}/dataConfig.json`, JSON.stringify(sectionDataObjList));
+            FileHelper.writeFile(`${this.configPath}/dataConfig.json`, JSON.stringify(sectionDataObjList));
+        
     }
 
 
@@ -172,7 +144,7 @@ export default class DataHelper {
                     section.expressModuleList.forEach(expressModule => {
                         // if (expressModule.includedDataModuleList.includes(moduleData.name)) {
                         if(section.name==sectionData.name) {
-                            const expressDataPath = `${this.folderPath}/module/${section.name}/express/${expressModule.name}-api/src-gen/data/${moduleData.name}.ts`
+                            const expressDataPath = `${this.folderPath}/module/${section.name}/express/${section.name}-api/src-gen/data/${expressModule.name}/${moduleData.name}.ts`
                             FileHelper.writeFile(expressDataPath, finalCode);
                         }
                             
@@ -186,6 +158,15 @@ export default class DataHelper {
                             FileHelper.writeFile(rnDataPath, finalCode);
                         }
                             
+                        // }
+                    });
+
+                    section.reactModuleList.forEach(reactModule => {
+                        // if (expressModule.includedDataModuleList.includes(moduleData.name)) {
+                        if(section.name==sectionData.name) {
+                            const reactDataPath = `${this.folderPath}/module/${section.name}/react/${reactModule.name}/src/src-gen/data/${moduleData.name}.ts`
+                            FileHelper.writeFile(reactDataPath, finalCode);
+                        }
                         // }
                     });
                 })

@@ -1,10 +1,10 @@
-type IFrontEndScreen = {
+export interface IFrontEndScreen{
     name: string;
     path: string;
     parentLayout?: string;
 };
 
-type IRNLayout = {
+export interface IRNLayout {
     name: string;
     route: string;
     type?: string;
@@ -18,22 +18,69 @@ type IRNLayout = {
         parentLayout?:string;
     }>;
 };
-type IRNScreen  = {
+export interface IRNScreen{
     name: string,
     path: string
 }
-type IRNModule = {
+export interface IRNModule {
     screenList: IRNScreen[],
    layout: IRNLayout[],
    name: string,
 }
 
 
-type IRNSection = {
+export interface IRNSection {
     name: string,
     rnModuleList: IRNModule[];
 }
-interface SpecJSON {
+export interface SpecJSON {
     screenList: IFrontEndScreen[];
     layout: IRNLayout[];
+}
+
+
+
+//React
+
+
+export interface IReactSection {
+    name: string,
+    reactModuleList: IReactModule[];
+}
+
+export interface IReactModule {
+    
+    componentList: IReactComponent[],
+    screenList: IReactScreen[],
+   layout: IReactLayout[],
+   name: string,
+}
+
+
+
+export interface IReactScreen {
+    name:string,
+    path:string
+}
+
+export interface IReactComponent {
+    name:string,
+    path:string,
+    props?: any,
+    parent?: string
+}
+
+
+export interface IReactLayout {
+    name:string,
+    route:string,
+    children?: IReactLayout[],
+    element?: string;
+    // type?: string;
+}
+
+export interface IReactElement {
+    element: string;
+    route: string;
+    name: string;
 }

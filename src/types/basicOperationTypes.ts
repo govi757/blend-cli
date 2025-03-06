@@ -3,6 +3,7 @@ export type IBasicSection = {
     dataModuleList: string[];
     expressModuleList: { name: string; includedDataModuleList: string[] }[];
     rnModuleList?: {name: string}[];
+    reactModuleList?: {name: string}[];
     mongoModuleList?: {name: string}[];
   };
   

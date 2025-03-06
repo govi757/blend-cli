@@ -1,12 +1,11 @@
 import path from 'path';
 import { FileHelper } from './fileHelper';
-const VALID_DATA_TYPES = ['string', 'number', 'boolean', 'any', 'object', 'array'];
-const VALID_KEYWORDS = ['module', 'section', 'api', 'input', 'output', 'authenticate', '}'];
-const VALID_CUSTOM_TYPE_REGEX = /^[A-Za-z_][A-Za-z0-9_]*(\[\])?->(?:[A-Za-z_][A-Za-z0-9_]*(\[\])?)(->(?:[A-Za-z_][A-Za-z0-9_]*(\[\])?))*$/;
 
-import { IApiSection, IApiSpec, ApiType, IApiMainSection, IExpressSection, IApiDataField } from '../types/apiOperationTypes';
+
+import { IApiSection, ApiType, IApiMainSection, IExpressSection, IApiDataField } from '../types/apiOperationTypes';
 import { IBasicProject } from '../types/basicOperationTypes';
-import { IDataField, IDataSection } from '../types/dataOperationTypes';
+import { IDataField } from '../types/dataOperationTypes';
+import BlendApiGrammarHelper from './grammarHelper/BlendApiGrammarHelper';
 export default class ExpressHelper {
     basicFilePath: string;
     folderName: string;
@@ -56,172 +55,33 @@ export default class ExpressHelper {
 
     }
 
-    validateSpecLine(line: string, lineNumber: number,sectionName: string): void {
-        if (!line.trim()) return; // Skip empty lines
-
-        const trimmedLine = line.trim();
-    
-        // Allow standalone closing braces
-        if (trimmedLine === '}') return;
-    
-        // Check if the line matches any of the valid keywords strictly
-        const isValidKeyword = VALID_KEYWORDS.some(keyword => {
-            const regex = new RegExp(`^${keyword}\\b`);
-            return regex.test(trimmedLine);
-        });
-    
-        if (!isValidKeyword) {
-            console.log('\x1b[31m%s\x1b[0m',`Syntax error at line ${lineNumber}: Invalid keyword or syntax "${trimmedLine}"`)
-            throw new Error(`Syntax error at line ${lineNumber}: Invalid keyword or syntax "${trimmedLine}"`);
-        }
-    
-        // Validate API declaration parentheses
-        if (trimmedLine.startsWith('api')) {
-            
-            if (!trimmedLine.includes('(') || !trimmedLine.includes(')')) {
-                console.log('\x1b[31m%s\x1b[0m',`Syntax error at line ${lineNumber}: Missing or unmatched parentheses in API declaration "${line}"`)
-                throw new Error(`Syntax error at line ${lineNumber}: Missing or unmatched parentheses in API declaration "${line}"`);
-            }
-        }
-    
-        // Validate input/output parameter types
-        if (trimmedLine.startsWith('input') || trimmedLine.startsWith('output')) {
-            const paramsMatch = trimmedLine.match(/\((.+)\)/);
-            if (!paramsMatch) {
-                console.log('\x1b[31m%s\x1b[0m',`Syntax error at line ${lineNumber}: Missing parentheses in "${line}"`)
-                throw new Error(`Syntax error at line ${lineNumber}: Missing parentheses in "${line}"`);
-            }
-            const params = paramsMatch[1].split(',').map(param => param.trim());
-            params.forEach(param => {
-                const [_, typeWithOptional] = param.split(':').map(p => p.trim());
-                const type = typeWithOptional?.replace('?', '');
-                if (
-                    type && 
-                    !VALID_DATA_TYPES.includes(type) && 
-                    !VALID_CUSTOM_TYPE_REGEX.test(type)
-                ) {
-                    console.log('\x1b[31m%s\x1b[0m',`Invalid data type "${type}" at line ${lineNumber}: "${line}"`)
-                    throw new Error(`Invalid data type "${type}" at line ${lineNumber}: "${line}"`);
-                } else {
-                    const dataArr = type?.trim()?.split("->");
-                    if(dataArr.length==2) {
-                        
-                        const dataJson: IDataSection[] = JSON.parse(FileHelper.readFile(`${this.configPath}/dataConfig.json`));
-                        const currentDataSection = dataJson.find(item => item.name == sectionName);
-                        const currentDataModule = currentDataSection.sectionDataList?.find(item => item.name==dataArr[0]);
-                        if(!currentDataModule) {
-                            console.log('\x1b[31m%s\x1b[0m',`Data module not found"${dataArr[0]}" at line ${lineNumber}: "${line}"`)
-                            throw new Error(`Data module not found"${dataArr[0]}" at line ${lineNumber}: "${line}"`);
-                        }
-                        if(!currentDataModule?.dataList?.some(item => item.name == dataArr[1].replace("[]",""))) {
-                            throw new Error(`Data type ${dataArr[1]} not found in module "${dataArr[0]}" at line ${lineNumber}: "${line}"`);
-                        }
-
-                    }
-                }
-            });
-        }
-    }
-
-    validateSpec(spec: string,sectionName: string): void {
-        const lines = spec.split('\n').map(line => line.trim());
-        try {
-            // lines.forEach((line, index) => this.validateSpecLine(line, index + 1,sectionName));
-        } catch (error: any) {
-            console.error(`%c${error.message}`, 'color: red; font-weight: bold;');
-            throw error; // Stop further execution on error
-        }
-    }
 
     parseSpec() {
         let apiMainSectionList: IApiMainSection[] = [];
         this.basicProjectContent.sectionList.forEach(section => {
             const sectionName = section.name;
             const sectionFolderPath = path.join(this.folderPath, 'spec', sectionName);
-
+            const expressSectionList: IExpressSection[]=[];
             // Ensure the section folder and its data subfolder exist
             const apiFolderPath = path.join(sectionFolderPath, 'api');
-            let expressSectionList: IExpressSection[] = [];
 
             section.expressModuleList.forEach(module => {
-                let apiSectionList: IApiSection[] = [];
                     const filePath = path.join(apiFolderPath, `${module.name}.express`);
                     const specCode = FileHelper.readFile(filePath);
-                    this.validateSpec(specCode,sectionName);
-                    const lines = specCode.split('\n').map(line => line.trim());
-                    // const sections: Section[] = [];
-                    let currentSection: IApiSection | null = null;
-
-                    for (const line of lines) {
-                        if (line.startsWith('//') || line === '') {
-                            continue;
-                        }
-                        if (line.startsWith('section')) {
-                            const sectionName = line.match(/section\s+(\w+)/)?.[1];
-                            if (sectionName) {
-                                if (currentSection) apiSectionList.push(currentSection);
-                                currentSection = { name: sectionName, apiList: [] };
-                            }
-                        } else if (line.startsWith('api')) {
-                            const apiMatch = line.match(/api\s+(\w+)\((\w+)\)/);
-                            if (apiMatch && currentSection) {
-                                const [, apiName, httpMethod] = apiMatch;
-                                const api: IApiSpec = {
-                                    name: apiName,
-                                    type: httpMethod.toLowerCase(),
-                                    input: {},
-                                    output: {}
-                                };
-                                currentSection.apiList.push(api);
-                            }
-                        } else if (line.startsWith('input')) {
-                            const inputMatch = line.match(/input\((.+)\)/);
-                            const inputParams = inputMatch?.[1]?.split(',') || [];
-                            const api = currentSection?.apiList[currentSection.apiList.length - 1];
-                            inputParams.forEach(param => {
-                                console.log(param,"Input param is this")
-                                const [name, typeWithOptional] = param.split(':').map(p => p.trim());
-                                const type = typeWithOptional.replace('?', '');
-                                const required = !typeWithOptional.includes('?');
-                                if (api) {
-                                    api.input[name] = { type, required };
-                                }
-                            });
-                        } else if (line.startsWith('output')) {
-                            const outputMatch = line.match(/output\((.+)\)/);
-                            const outputParams = outputMatch?.[1]?.split(',') || [];
-                            const api = currentSection?.apiList[currentSection.apiList.length - 1];
-                            outputParams.forEach(param => {
-                                if(!param.includes(":")) {
-                                    const required = !param.includes('?');
-                                    api.directOutput = {name:param,required};
-                                } else {
-                                    const [name, typeWithOptional] = param.split(':').map(p => p.trim());
-                                    const type = typeWithOptional.replace('?', '');
-                                    const required = !typeWithOptional.includes('?');
-                                    if (api) {
-                                        api.output[name] = { type, required };
-                                    }
-                                }
-                                
-                            });
-                        } else if (line.startsWith('authenticate')) {
-                            const api = currentSection?.apiList[currentSection.apiList.length - 1];
-                            if (api) api.authenticated = true;
-                        }
+                    const json = new BlendApiGrammarHelper().parseBlendApi(specCode);
+                    if(!json.isValid) {
+                        throw new Error("Error while parsing the syntax");
                     }
-
-                    if (currentSection) apiSectionList.push(currentSection);
-
-                    console.log(JSON.stringify(apiSectionList), "sections")
-                    expressSectionList.push({ apiSectionList, name: module.name,includedDataModuleList: module.includedDataModuleList })
+                    expressSectionList.push(json.json);
             });
             let sectionObj = {
                 name: sectionName,
-                expressSectionList: expressSectionList
+                expressSectionList
             }
 
             apiMainSectionList.push(sectionObj);
+
+            
         })
 
         FileHelper.writeFile(`${this.configPath}/apiConfig.json`, JSON.stringify(apiMainSectionList));
@@ -282,36 +142,7 @@ export default class ExpressHelper {
                 this.createProject(section.name, `${section.name}-api`);
             }
         })
-        // const sectionRegex = /section\s+([a-zA-Z0-9_]+)\s*{([^}]*)}/g; // Match entire section
-        // const dataModuleRegex = /express-module\s+([a-zA-Z0-9,]+)/; // Match data-module line
-
-        // let match;
-        // while ((match = sectionRegex.exec(this.basicFileContent)) !== null) {
-        //     const sectionName = match[1].trim();
-        //     const sectionContent = match[2].trim();
-
-        //     // Check for data-module within the section content
-        //     const dataMatch = dataModuleRegex.exec(sectionContent);
-        //     if (dataMatch) {
-        //         const modules = dataMatch[1]
-        //             .split(',')
-        //             .map(module => module.trim()); // Normalize module names
-
-        //         // Path for the section folder inside `spec`
-        //         const sectionFolderPath = path.join(this.folderPath, 'spec', sectionName);
-
-        //         // Ensure the section folder and its data subfolder exist
-        //         const apiFolderPath = path.join(sectionFolderPath, 'api');
-        //         FileHelper.ensureDir(apiFolderPath);
-
-        //         // Create .data files for each module
-        //         modules.forEach(module => {
-
-        //             this.createProject(sectionName, module);
-
-        //         });
-        //     }
-        // }
+       
     }
 
     createProject(sectionName: string, projectName: string) {
@@ -575,7 +406,7 @@ export default class ${serviceName} implements ${interfaceName} {
             const inputName: string = (`${apiSection.name}_${currVal.name}_Input`).toUpperCase();
 
             acc = acc + `
-                    this.app.route('/${this.getApiName(expressSection.name)}/${this.getApiName(apiSection.name)}/${this.getApiName(currVal.name)}').${currVal.type}(${currVal.authenticated === true ? 'verifyToken,' : ''}async (req: express.Request, res: express.Response) => {
+                    this.app.route('/${this.getApiName(expressSection.name)}/${this.getApiName(apiSection.name)}/${this.getApiName(currVal.name)}').${currVal.type.toLowerCase()}(${currVal.authenticated === true ? 'verifyToken,' : ''}async (req: express.Request, res: express.Response) => {
                         ${Object.keys(currVal.input).length > 0 ?
                     ` const input: ${inputName} = ${inputName}.fromJSON(${currVal.type == ApiType.Get ? 'req.query' : 'req.body'});
                             const defaultPreCondition = input.checkDefaultPreCondition();

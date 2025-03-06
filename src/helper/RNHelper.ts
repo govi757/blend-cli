@@ -2,6 +2,8 @@ import { IApiMainSection, IApiSection } from "../types/apiOperationTypes";
 import { IBasicProject, IBasicSection } from "../types/basicOperationTypes";
 import { FileHelper } from "./fileHelper";
 import path from 'path';
+import BlendRNGrammarHelper from "./grammarHelper/BlendRNGrammarHelper";
+import { IFrontEndScreen, IRNLayout, IRNModule, IRNScreen, IRNSection } from "../types/frontendOperationTypes";
 
 const { execSync } = require('child_process');
 
@@ -148,20 +150,28 @@ export default class RNHelper {
             let screenList: IFrontEndScreen[] = [];
             let layout: IRNLayout[] = [];
             let projectName = "";
+            const sectionObj: IRNSection = {
+                name: sectionName,
+                rnModuleList: [],
+            };
             section.rnModuleList.forEach(rnModule => {
                 const rnFilePath = path.join(this.folderPath, `spec/${sectionName}/frontend/${rnModule.name}.rn`);
                 const specCode = FileHelper.readFile(rnFilePath);
+                const rnHelper = new BlendRNGrammarHelper();
+                const json = rnHelper.parseBlendRN(specCode);
+                if(!json.valid) {
+                    throw new Error("Error while parsing the react native screens");
+                } else {
+                    sectionObj.rnModuleList.push(json.json);
+                }
 
                 // Parse screenList and layout from the spec file
-                screenList = this.parseScreenList(specCode);
-                layout = this.parseLayouts(specCode);
-                projectName = rnModule.name;
+                // screenList = this.parseScreenList(specCode);
+                // layout = this.parseLayouts(specCode);
+                // projectName = rnModule.name;
             });
 
-            const sectionObj: IRNSection = {
-                name: sectionName,
-                rnModuleList: [{ screenList, layout, name: projectName }],
-            };
+            
             sectionRnList.push(sectionObj);
         });
 
@@ -224,7 +234,6 @@ export default class RNHelper {
                                 'react-native-reanimated',
                                 'react-native-safe-area-context',
                                 'react-native-screens',
-                                'react-native-web',
                                 'react-redux',
                                 'redux-saga',
                                 "axios"
