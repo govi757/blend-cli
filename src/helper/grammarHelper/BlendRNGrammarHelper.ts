@@ -5,7 +5,7 @@ import { IDataBase } from "../../types/mongoOperationTypes";
 import { BlendRNLexer } from "../../parser/blendRN/src/grammar/BlendRNLexer";
 import { BlendRNParser, LayoutDefinitionContext, ProgramContext } from "../../parser/blendRN/src/grammar/BlendRNParser";
 import path from "path";
-import { IRNLayout, IRNModule, IRNScreen } from "../../types/frontendOperationTypes";
+import { IRNComponent, IRNLayout, IRNModule, IRNScreen } from "../../types/frontendOperationTypes";
 
 export default class BlendRNGrammarHelper {
     parseBlendRN(code: string){
@@ -15,9 +15,16 @@ export default class BlendRNGrammarHelper {
         const parser = new BlendRNParser(tokenStream);
         const program = parser.program();
         let screenList: IRNScreen[] = [];
+        let componentList: IRNComponent[] = [];
         program.screenDefenition().forEach(screen => {
             screen.CAPITAL_IDENTIFIER().forEach(screenName => {
                 screenList.push({name: screenName.text,path: screen.PATH_IDENTIFIER().text.replace(/"/g, '')});
+            })
+        });
+
+        program.componentDefenition().forEach(component => {
+            component.CAPITAL_IDENTIFIER().forEach(componentName => {
+                componentList.push({name: componentName.text,path: component.PATH_IDENTIFIER().text.replace(/"/g, '')});
             })
         });
         const layout: IRNLayout[] = parseAndCreateLayoutAndScreen(program);
@@ -41,6 +48,7 @@ export default class BlendRNGrammarHelper {
         }
         
         const json:IRNModule = {
+            componentList,
             screenList,
             layout,
             name: program.moduleDefinition().CAPITAL_IDENTIFIER().text

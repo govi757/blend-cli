@@ -38,30 +38,33 @@ export class BlendRNParser extends Parser {
 	public static readonly T__9 = 10;
 	public static readonly T__10 = 11;
 	public static readonly T__11 = 12;
-	public static readonly LAYOUT_TYPE = 13;
-	public static readonly PATH_IDENTIFIER = 14;
-	public static readonly IDENTIFIER = 15;
-	public static readonly CAPITAL_IDENTIFIER = 16;
-	public static readonly WS = 17;
+	public static readonly T__12 = 13;
+	public static readonly LAYOUT_TYPE = 14;
+	public static readonly PATH_IDENTIFIER = 15;
+	public static readonly IDENTIFIER = 16;
+	public static readonly CAPITAL_IDENTIFIER = 17;
+	public static readonly WS = 18;
 	public static readonly RULE_program = 0;
 	public static readonly RULE_moduleDefinition = 1;
 	public static readonly RULE_screenDefenition = 2;
-	public static readonly RULE_layoutDefinition = 3;
-	public static readonly RULE_pageDefinition = 4;
+	public static readonly RULE_componentDefenition = 3;
+	public static readonly RULE_layoutDefinition = 4;
+	public static readonly RULE_pageDefinition = 5;
 	// tslint:disable:no-trailing-whitespace
 	public static readonly ruleNames: string[] = [
-		"program", "moduleDefinition", "screenDefenition", "layoutDefinition", 
-		"pageDefinition",
+		"program", "moduleDefinition", "screenDefenition", "componentDefenition", 
+		"layoutDefinition", "pageDefinition",
 	];
 
 	private static readonly _LITERAL_NAMES: Array<string | undefined> = [
-		undefined, "'module'", "'screen'", "','", "'under'", "'layout'", "'('", 
-		"')'", "'type'", "'{'", "'}'", "'page'", "'view'",
+		undefined, "'module'", "'screen'", "','", "'under'", "'component'", "'layout'", 
+		"'('", "')'", "'type'", "'{'", "'}'", "'page'", "'view'",
 	];
 	private static readonly _SYMBOLIC_NAMES: Array<string | undefined> = [
 		undefined, undefined, undefined, undefined, undefined, undefined, undefined, 
-		undefined, undefined, undefined, undefined, undefined, undefined, "LAYOUT_TYPE", 
-		"PATH_IDENTIFIER", "IDENTIFIER", "CAPITAL_IDENTIFIER", "WS",
+		undefined, undefined, undefined, undefined, undefined, undefined, undefined, 
+		"LAYOUT_TYPE", "PATH_IDENTIFIER", "IDENTIFIER", "CAPITAL_IDENTIFIER", 
+		"WS",
 	];
 	public static readonly VOCABULARY: Vocabulary = new VocabularyImpl(BlendRNParser._LITERAL_NAMES, BlendRNParser._SYMBOLIC_NAMES, []);
 
@@ -97,33 +100,47 @@ export class BlendRNParser extends Parser {
 		try {
 			this.enterOuterAlt(_localctx, 1);
 			{
-			this.state = 10;
+			this.state = 12;
 			this.moduleDefinition();
-			this.state = 14;
-			this._errHandler.sync(this);
-			_la = this._input.LA(1);
-			while (_la === BlendRNParser.T__1) {
-				{
-				{
-				this.state = 11;
-				this.screenDefenition();
-				}
-				}
-				this.state = 16;
-				this._errHandler.sync(this);
-				_la = this._input.LA(1);
-			}
-			this.state = 20;
+			this.state = 16;
 			this._errHandler.sync(this);
 			_la = this._input.LA(1);
 			while (_la === BlendRNParser.T__4) {
 				{
 				{
-				this.state = 17;
+				this.state = 13;
+				this.componentDefenition();
+				}
+				}
+				this.state = 18;
+				this._errHandler.sync(this);
+				_la = this._input.LA(1);
+			}
+			this.state = 22;
+			this._errHandler.sync(this);
+			_la = this._input.LA(1);
+			while (_la === BlendRNParser.T__1) {
+				{
+				{
+				this.state = 19;
+				this.screenDefenition();
+				}
+				}
+				this.state = 24;
+				this._errHandler.sync(this);
+				_la = this._input.LA(1);
+			}
+			this.state = 28;
+			this._errHandler.sync(this);
+			_la = this._input.LA(1);
+			while (_la === BlendRNParser.T__5) {
+				{
+				{
+				this.state = 25;
 				this.layoutDefinition();
 				}
 				}
-				this.state = 22;
+				this.state = 30;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
 			}
@@ -150,9 +167,9 @@ export class BlendRNParser extends Parser {
 		try {
 			this.enterOuterAlt(_localctx, 1);
 			{
-			this.state = 23;
+			this.state = 31;
 			this.match(BlendRNParser.T__0);
-			this.state = 24;
+			this.state = 32;
 			this.match(BlendRNParser.CAPITAL_IDENTIFIER);
 			}
 		}
@@ -178,29 +195,77 @@ export class BlendRNParser extends Parser {
 		try {
 			this.enterOuterAlt(_localctx, 1);
 			{
-			this.state = 26;
+			this.state = 34;
 			this.match(BlendRNParser.T__1);
-			this.state = 27;
+			this.state = 35;
 			this.match(BlendRNParser.CAPITAL_IDENTIFIER);
-			this.state = 32;
+			this.state = 40;
 			this._errHandler.sync(this);
 			_la = this._input.LA(1);
 			while (_la === BlendRNParser.T__2) {
 				{
 				{
-				this.state = 28;
+				this.state = 36;
 				this.match(BlendRNParser.T__2);
-				this.state = 29;
+				this.state = 37;
 				this.match(BlendRNParser.CAPITAL_IDENTIFIER);
 				}
 				}
-				this.state = 34;
+				this.state = 42;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
 			}
-			this.state = 35;
+			this.state = 43;
 			this.match(BlendRNParser.T__3);
-			this.state = 36;
+			this.state = 44;
+			this.match(BlendRNParser.PATH_IDENTIFIER);
+			}
+		}
+		catch (re) {
+			if (re instanceof RecognitionException) {
+				_localctx.exception = re;
+				this._errHandler.reportError(this, re);
+				this._errHandler.recover(this, re);
+			} else {
+				throw re;
+			}
+		}
+		finally {
+			this.exitRule();
+		}
+		return _localctx;
+	}
+	// @RuleVersion(0)
+	public componentDefenition(): ComponentDefenitionContext {
+		let _localctx: ComponentDefenitionContext = new ComponentDefenitionContext(this._ctx, this.state);
+		this.enterRule(_localctx, 6, BlendRNParser.RULE_componentDefenition);
+		let _la: number;
+		try {
+			this.enterOuterAlt(_localctx, 1);
+			{
+			this.state = 46;
+			this.match(BlendRNParser.T__4);
+			this.state = 47;
+			this.match(BlendRNParser.CAPITAL_IDENTIFIER);
+			this.state = 52;
+			this._errHandler.sync(this);
+			_la = this._input.LA(1);
+			while (_la === BlendRNParser.T__2) {
+				{
+				{
+				this.state = 48;
+				this.match(BlendRNParser.T__2);
+				this.state = 49;
+				this.match(BlendRNParser.CAPITAL_IDENTIFIER);
+				}
+				}
+				this.state = 54;
+				this._errHandler.sync(this);
+				_la = this._input.LA(1);
+			}
+			this.state = 55;
+			this.match(BlendRNParser.T__3);
+			this.state = 56;
 			this.match(BlendRNParser.PATH_IDENTIFIER);
 			}
 		}
@@ -221,61 +286,61 @@ export class BlendRNParser extends Parser {
 	// @RuleVersion(0)
 	public layoutDefinition(): LayoutDefinitionContext {
 		let _localctx: LayoutDefinitionContext = new LayoutDefinitionContext(this._ctx, this.state);
-		this.enterRule(_localctx, 6, BlendRNParser.RULE_layoutDefinition);
+		this.enterRule(_localctx, 8, BlendRNParser.RULE_layoutDefinition);
 		let _la: number;
 		try {
 			this.enterOuterAlt(_localctx, 1);
 			{
-			this.state = 38;
-			this.match(BlendRNParser.T__4);
-			this.state = 39;
+			this.state = 58;
+			this.match(BlendRNParser.T__5);
+			this.state = 59;
 			this.match(BlendRNParser.CAPITAL_IDENTIFIER);
-			this.state = 40;
-			this.match(BlendRNParser.T__5);
-			this.state = 41;
+			this.state = 60;
+			this.match(BlendRNParser.T__6);
+			this.state = 61;
 			this.match(BlendRNParser.PATH_IDENTIFIER);
-			this.state = 42;
-			this.match(BlendRNParser.T__6);
-			this.state = 43;
+			this.state = 62;
 			this.match(BlendRNParser.T__7);
-			this.state = 44;
-			this.match(BlendRNParser.T__5);
-			this.state = 45;
-			this.match(BlendRNParser.LAYOUT_TYPE);
-			this.state = 46;
-			this.match(BlendRNParser.T__6);
-			this.state = 47;
+			this.state = 63;
 			this.match(BlendRNParser.T__8);
-			this.state = 51;
+			this.state = 64;
+			this.match(BlendRNParser.T__6);
+			this.state = 65;
+			this.match(BlendRNParser.LAYOUT_TYPE);
+			this.state = 66;
+			this.match(BlendRNParser.T__7);
+			this.state = 67;
+			this.match(BlendRNParser.T__9);
+			this.state = 71;
 			this._errHandler.sync(this);
 			_la = this._input.LA(1);
-			while (_la === BlendRNParser.T__10) {
+			while (_la === BlendRNParser.T__11) {
 				{
 				{
-				this.state = 48;
+				this.state = 68;
 				this.pageDefinition();
 				}
 				}
-				this.state = 53;
+				this.state = 73;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
 			}
-			this.state = 57;
+			this.state = 77;
 			this._errHandler.sync(this);
 			_la = this._input.LA(1);
-			while (_la === BlendRNParser.T__4) {
+			while (_la === BlendRNParser.T__5) {
 				{
 				{
-				this.state = 54;
+				this.state = 74;
 				this.layoutDefinition();
 				}
 				}
-				this.state = 59;
+				this.state = 79;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
 			}
-			this.state = 60;
-			this.match(BlendRNParser.T__9);
+			this.state = 80;
+			this.match(BlendRNParser.T__10);
 			}
 		}
 		catch (re) {
@@ -295,28 +360,28 @@ export class BlendRNParser extends Parser {
 	// @RuleVersion(0)
 	public pageDefinition(): PageDefinitionContext {
 		let _localctx: PageDefinitionContext = new PageDefinitionContext(this._ctx, this.state);
-		this.enterRule(_localctx, 8, BlendRNParser.RULE_pageDefinition);
+		this.enterRule(_localctx, 10, BlendRNParser.RULE_pageDefinition);
 		try {
 			this.enterOuterAlt(_localctx, 1);
 			{
-			this.state = 62;
-			this.match(BlendRNParser.T__10);
-			this.state = 63;
-			this.match(BlendRNParser.CAPITAL_IDENTIFIER);
-			this.state = 64;
-			this.match(BlendRNParser.T__5);
-			this.state = 65;
-			this.match(BlendRNParser.PATH_IDENTIFIER);
-			this.state = 66;
-			this.match(BlendRNParser.T__6);
-			this.state = 67;
+			this.state = 82;
 			this.match(BlendRNParser.T__11);
-			this.state = 68;
-			this.match(BlendRNParser.T__5);
-			this.state = 69;
+			this.state = 83;
 			this.match(BlendRNParser.CAPITAL_IDENTIFIER);
-			this.state = 70;
+			this.state = 84;
 			this.match(BlendRNParser.T__6);
+			this.state = 85;
+			this.match(BlendRNParser.PATH_IDENTIFIER);
+			this.state = 86;
+			this.match(BlendRNParser.T__7);
+			this.state = 87;
+			this.match(BlendRNParser.T__12);
+			this.state = 88;
+			this.match(BlendRNParser.T__6);
+			this.state = 89;
+			this.match(BlendRNParser.CAPITAL_IDENTIFIER);
+			this.state = 90;
+			this.match(BlendRNParser.T__7);
 			}
 		}
 		catch (re) {
@@ -335,37 +400,44 @@ export class BlendRNParser extends Parser {
 	}
 
 	public static readonly _serializedATN: string =
-		"\x03\uC91D\uCABA\u058D\uAFBA\u4F53\u0607\uEA8B\uC241\x03\x13K\x04\x02" +
-		"\t\x02\x04\x03\t\x03\x04\x04\t\x04\x04\x05\t\x05\x04\x06\t\x06\x03\x02" +
-		"\x03\x02\x07\x02\x0F\n\x02\f\x02\x0E\x02\x12\v\x02\x03\x02\x07\x02\x15" +
-		"\n\x02\f\x02\x0E\x02\x18\v\x02\x03\x03\x03\x03\x03\x03\x03\x04\x03\x04" +
-		"\x03\x04\x03\x04\x07\x04!\n\x04\f\x04\x0E\x04$\v\x04\x03\x04\x03\x04\x03" +
-		"\x04\x03\x05\x03\x05\x03\x05\x03\x05\x03\x05\x03\x05\x03\x05\x03\x05\x03" +
-		"\x05\x03\x05\x03\x05\x07\x054\n\x05\f\x05\x0E\x057\v\x05\x03\x05\x07\x05" +
-		":\n\x05\f\x05\x0E\x05=\v\x05\x03\x05\x03\x05\x03\x06\x03\x06\x03\x06\x03" +
-		"\x06\x03\x06\x03\x06\x03\x06\x03\x06\x03\x06\x03\x06\x03\x06\x02\x02\x02" +
-		"\x07\x02\x02\x04\x02\x06\x02\b\x02\n\x02\x02\x02\x02J\x02\f\x03\x02\x02" +
-		"\x02\x04\x19\x03\x02\x02\x02\x06\x1C\x03\x02\x02\x02\b(\x03\x02\x02\x02" +
-		"\n@\x03\x02\x02\x02\f\x10\x05\x04\x03\x02\r\x0F\x05\x06\x04\x02\x0E\r" +
-		"\x03\x02\x02\x02\x0F\x12\x03\x02\x02\x02\x10\x0E\x03\x02\x02\x02\x10\x11" +
-		"\x03\x02\x02\x02\x11\x16\x03\x02\x02\x02\x12\x10\x03\x02\x02\x02\x13\x15" +
-		"\x05\b\x05\x02\x14\x13\x03\x02\x02\x02\x15\x18\x03\x02\x02\x02\x16\x14" +
-		"\x03\x02\x02\x02\x16\x17\x03\x02\x02\x02\x17\x03\x03\x02\x02\x02\x18\x16" +
-		"\x03\x02\x02\x02\x19\x1A\x07\x03\x02\x02\x1A\x1B\x07\x12\x02\x02\x1B\x05" +
-		"\x03\x02\x02\x02\x1C\x1D\x07\x04\x02\x02\x1D\"\x07\x12\x02\x02\x1E\x1F" +
-		"\x07\x05\x02\x02\x1F!\x07\x12\x02\x02 \x1E\x03\x02\x02\x02!$\x03\x02\x02" +
-		"\x02\" \x03\x02\x02\x02\"#\x03\x02\x02\x02#%\x03\x02\x02\x02$\"\x03\x02" +
-		"\x02\x02%&\x07\x06\x02\x02&\'\x07\x10\x02\x02\'\x07\x03\x02\x02\x02()" +
-		"\x07\x07\x02\x02)*\x07\x12\x02\x02*+\x07\b\x02\x02+,\x07\x10\x02\x02," +
-		"-\x07\t\x02\x02-.\x07\n\x02\x02./\x07\b\x02\x02/0\x07\x0F\x02\x0201\x07" +
-		"\t\x02\x0215\x07\v\x02\x0224\x05\n\x06\x0232\x03\x02\x02\x0247\x03\x02" +
-		"\x02\x0253\x03\x02\x02\x0256\x03\x02\x02\x026;\x03\x02\x02\x0275\x03\x02" +
-		"\x02\x028:\x05\b\x05\x0298\x03\x02\x02\x02:=\x03\x02\x02\x02;9\x03\x02" +
-		"\x02\x02;<\x03\x02\x02\x02<>\x03\x02\x02\x02=;\x03\x02\x02\x02>?\x07\f" +
-		"\x02\x02?\t\x03\x02\x02\x02@A\x07\r\x02\x02AB\x07\x12\x02\x02BC\x07\b" +
-		"\x02\x02CD\x07\x10\x02\x02DE\x07\t\x02\x02EF\x07\x0E\x02\x02FG\x07\b\x02" +
-		"\x02GH\x07\x12\x02\x02HI\x07\t\x02\x02I\v\x03\x02\x02\x02\x07\x10\x16" +
-		"\"5;";
+		"\x03\uC91D\uCABA\u058D\uAFBA\u4F53\u0607\uEA8B\uC241\x03\x14_\x04\x02" +
+		"\t\x02\x04\x03\t\x03\x04\x04\t\x04\x04\x05\t\x05\x04\x06\t\x06\x04\x07" +
+		"\t\x07\x03\x02\x03\x02\x07\x02\x11\n\x02\f\x02\x0E\x02\x14\v\x02\x03\x02" +
+		"\x07\x02\x17\n\x02\f\x02\x0E\x02\x1A\v\x02\x03\x02\x07\x02\x1D\n\x02\f" +
+		"\x02\x0E\x02 \v\x02\x03\x03\x03\x03\x03\x03\x03\x04\x03\x04\x03\x04\x03" +
+		"\x04\x07\x04)\n\x04\f\x04\x0E\x04,\v\x04\x03\x04\x03\x04\x03\x04\x03\x05" +
+		"\x03\x05\x03\x05\x03\x05\x07\x055\n\x05\f\x05\x0E\x058\v\x05\x03\x05\x03" +
+		"\x05\x03\x05\x03\x06\x03\x06\x03\x06\x03\x06\x03\x06\x03\x06\x03\x06\x03" +
+		"\x06\x03\x06\x03\x06\x03\x06\x07\x06H\n\x06\f\x06\x0E\x06K\v\x06\x03\x06" +
+		"\x07\x06N\n\x06\f\x06\x0E\x06Q\v\x06\x03\x06\x03\x06\x03\x07\x03\x07\x03" +
+		"\x07\x03\x07\x03\x07\x03\x07\x03\x07\x03\x07\x03\x07\x03\x07\x03\x07\x02" +
+		"\x02\x02\b\x02\x02\x04\x02\x06\x02\b\x02\n\x02\f\x02\x02\x02\x02_\x02" +
+		"\x0E\x03\x02\x02\x02\x04!\x03\x02\x02\x02\x06$\x03\x02\x02\x02\b0\x03" +
+		"\x02\x02\x02\n<\x03\x02\x02\x02\fT\x03\x02\x02\x02\x0E\x12\x05\x04\x03" +
+		"\x02\x0F\x11\x05\b\x05\x02\x10\x0F\x03\x02\x02\x02\x11\x14\x03\x02\x02" +
+		"\x02\x12\x10\x03\x02\x02\x02\x12\x13\x03\x02\x02\x02\x13\x18\x03\x02\x02" +
+		"\x02\x14\x12\x03\x02\x02\x02\x15\x17\x05\x06\x04\x02\x16\x15\x03\x02\x02" +
+		"\x02\x17\x1A\x03\x02\x02\x02\x18\x16\x03\x02\x02\x02\x18\x19\x03\x02\x02" +
+		"\x02\x19\x1E\x03\x02\x02\x02\x1A\x18\x03\x02\x02\x02\x1B\x1D\x05\n\x06" +
+		"\x02\x1C\x1B\x03\x02\x02\x02\x1D \x03\x02\x02\x02\x1E\x1C\x03\x02\x02" +
+		"\x02\x1E\x1F\x03\x02\x02\x02\x1F\x03\x03\x02\x02\x02 \x1E\x03\x02\x02" +
+		"\x02!\"\x07\x03\x02\x02\"#\x07\x13\x02\x02#\x05\x03\x02\x02\x02$%\x07" +
+		"\x04\x02\x02%*\x07\x13\x02\x02&\'\x07\x05\x02\x02\')\x07\x13\x02\x02(" +
+		"&\x03\x02\x02\x02),\x03\x02\x02\x02*(\x03\x02\x02\x02*+\x03\x02\x02\x02" +
+		"+-\x03\x02\x02\x02,*\x03\x02\x02\x02-.\x07\x06\x02\x02./\x07\x11\x02\x02" +
+		"/\x07\x03\x02\x02\x0201\x07\x07\x02\x0216\x07\x13\x02\x0223\x07\x05\x02" +
+		"\x0235\x07\x13\x02\x0242\x03\x02\x02\x0258\x03\x02\x02\x0264\x03\x02\x02" +
+		"\x0267\x03\x02\x02\x0279\x03\x02\x02\x0286\x03\x02\x02\x029:\x07\x06\x02" +
+		"\x02:;\x07\x11\x02\x02;\t\x03\x02\x02\x02<=\x07\b\x02\x02=>\x07\x13\x02" +
+		"\x02>?\x07\t\x02\x02?@\x07\x11\x02\x02@A\x07\n\x02\x02AB\x07\v\x02\x02" +
+		"BC\x07\t\x02\x02CD\x07\x10\x02\x02DE\x07\n\x02\x02EI\x07\f\x02\x02FH\x05" +
+		"\f\x07\x02GF\x03\x02\x02\x02HK\x03\x02\x02\x02IG\x03\x02\x02\x02IJ\x03" +
+		"\x02\x02\x02JO\x03\x02\x02\x02KI\x03\x02\x02\x02LN\x05\n\x06\x02ML\x03" +
+		"\x02\x02\x02NQ\x03\x02\x02\x02OM\x03\x02\x02\x02OP\x03\x02\x02\x02PR\x03" +
+		"\x02\x02\x02QO\x03\x02\x02\x02RS\x07\r\x02\x02S\v\x03\x02\x02\x02TU\x07" +
+		"\x0E\x02\x02UV\x07\x13\x02\x02VW\x07\t\x02\x02WX\x07\x11\x02\x02XY\x07" +
+		"\n\x02\x02YZ\x07\x0F\x02\x02Z[\x07\t\x02\x02[\\\x07\x13\x02\x02\\]\x07" +
+		"\n\x02\x02]\r\x03\x02\x02\x02\t\x12\x18\x1E*6IO";
 	public static __ATN: ATN;
 	public static get _ATN(): ATN {
 		if (!BlendRNParser.__ATN) {
@@ -380,6 +452,15 @@ export class BlendRNParser extends Parser {
 export class ProgramContext extends ParserRuleContext {
 	public moduleDefinition(): ModuleDefinitionContext {
 		return this.getRuleContext(0, ModuleDefinitionContext);
+	}
+	public componentDefenition(): ComponentDefenitionContext[];
+	public componentDefenition(i: number): ComponentDefenitionContext;
+	public componentDefenition(i?: number): ComponentDefenitionContext | ComponentDefenitionContext[] {
+		if (i === undefined) {
+			return this.getRuleContexts(ComponentDefenitionContext);
+		} else {
+			return this.getRuleContext(i, ComponentDefenitionContext);
+		}
 	}
 	public screenDefenition(): ScreenDefenitionContext[];
 	public screenDefenition(i: number): ScreenDefenitionContext;
@@ -467,6 +548,37 @@ export class ScreenDefenitionContext extends ParserRuleContext {
 	public exitRule(listener: BlendRNListener): void {
 		if (listener.exitScreenDefenition) {
 			listener.exitScreenDefenition(this);
+		}
+	}
+}
+
+
+export class ComponentDefenitionContext extends ParserRuleContext {
+	public CAPITAL_IDENTIFIER(): TerminalNode[];
+	public CAPITAL_IDENTIFIER(i: number): TerminalNode;
+	public CAPITAL_IDENTIFIER(i?: number): TerminalNode | TerminalNode[] {
+		if (i === undefined) {
+			return this.getTokens(BlendRNParser.CAPITAL_IDENTIFIER);
+		} else {
+			return this.getToken(BlendRNParser.CAPITAL_IDENTIFIER, i);
+		}
+	}
+	public PATH_IDENTIFIER(): TerminalNode { return this.getToken(BlendRNParser.PATH_IDENTIFIER, 0); }
+	constructor(parent: ParserRuleContext | undefined, invokingState: number) {
+		super(parent, invokingState);
+	}
+	// @Override
+	public get ruleIndex(): number { return BlendRNParser.RULE_componentDefenition; }
+	// @Override
+	public enterRule(listener: BlendRNListener): void {
+		if (listener.enterComponentDefenition) {
+			listener.enterComponentDefenition(this);
+		}
+	}
+	// @Override
+	public exitRule(listener: BlendRNListener): void {
+		if (listener.exitComponentDefenition) {
+			listener.exitComponentDefenition(this);
 		}
 	}
 }

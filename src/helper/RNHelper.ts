@@ -3,7 +3,7 @@ import { IBasicProject, IBasicSection } from "../types/basicOperationTypes";
 import { FileHelper } from "./fileHelper";
 import path from 'path';
 import BlendRNGrammarHelper from "./grammarHelper/BlendRNGrammarHelper";
-import { IFrontEndScreen, IRNLayout, IRNModule, IRNScreen, IRNSection } from "../types/frontendOperationTypes";
+import { IFrontEndScreen, IRNComponent, IRNLayout, IRNModule, IRNScreen, IRNSection } from "../types/frontendOperationTypes";
 
 const { execSync } = require('child_process');
 
@@ -38,6 +38,7 @@ export default class RNHelper {
     }
 
     doRNGenerations() {
+        this.buildComponents();
         this.buildScreens();
     }
 
@@ -207,6 +208,94 @@ export default class RNHelper {
             })
         })
     }
+
+    buildComponents() {
+            const reactSectionList: IRNSection[] = JSON.parse(FileHelper.readFile(`${this.configPath}/rnConfig.json`));
+            reactSectionList.forEach(reactSection => {
+                const reactFolderPath = path.join(this.folderPath, `module/${reactSection.name}/react-native`);
+    
+                reactSection.rnModuleList.forEach(reactModule => {
+                    this.buildLayouts(reactSection, reactModule);
+                    const rnProjectPath = path.join(reactFolderPath, reactModule.name);
+                    const mdpHookComponentPath = `${rnProjectPath}/src-gen/component/mdpHook.ts`;
+                    const mdpPath = `${rnProjectPath}/src-gen/component/MDP.ts`;
+                    const mdpHookCode = this.generateMDPHookCode(reactModule.componentList);
+                    FileHelper.writeFile(`${mdpHookComponentPath}`, mdpHookCode);
+                    FileHelper.writeFile(`${mdpPath}`, `export interface MDP {getMetaData:() => any;}\nexport interface IBasicComponent {value?: any;onInput?:(val: any) => any;}`);
+                    reactModule.componentList.forEach(component => {
+                        const componentPath = `${rnProjectPath}/src/component/${component.path}/`;
+                        const componentCode = this.generateComponentCode(component);
+                        const mdpCode = this.generateComponentMDPCode(component);
+                        FileHelper.createFile(`${componentPath}/${component.name}/${component.name}.tsx`, componentCode);
+                        FileHelper.createFile(`${componentPath}/${component.name}/${component.name}MDP.ts`, mdpCode);
+                        FileHelper.createFile(`${componentPath}/${component.name}/index.ts`, `export {default} from './${component.name}';\nexport * from "./${component.name}MDP";`);
+    
+                    });
+                })
+            })
+        }
+        generateMDPHookCode(componentList: IRNComponent[]) {
+            const importsCode = `
+            ${componentList.reduce((acc, component) => {
+                acc = acc + `import ${component.name} from '../../src/component/${component.path}/${component.name}';\n`
+                return acc;
+            }, "")}`
+            return `
+            import React, { useEffect, useState } from "react"
+            import { MDP } from "./MDP";
+            ${importsCode}
+            
+    
+    export const useMetaData: (props: { mdpClass: MDP, defaultInput?: any; onInput?: (val: any) => void; extraProps?: any }) => [element: React.ReactElement, input: any, setInput: any] = (props) => {
+        console.log(props.defaultInput, props.mdpClass, "defaultInput")
+        const [input, setInput] = useState(props.defaultInput);
+    
+    
+    
+    
+        return [generateElementFromMetaData({
+            componentClassMetaData: props.mdpClass.getMetaData(),
+            onInput: (val: any) => {
+                setInput(val);
+                props.onInput && props.onInput(val)
+            },
+            value: input,
+            extraProps: props.extraProps
+        }), input, setInput]
+    }
+    
+    
+    export const generateElementFromMetaData = ({ componentClassMetaData, value, onInput, extraProps }: {
+        componentClassMetaData: any;
+        value?: any;
+        onInput?: any;
+        extraProps?: object;
+    }) => {
+        return React.createElement((ComponentNameMap[componentClassMetaData.componentName] as any), {
+            ...componentClassMetaData.props,
+            value: value,
+            onInput: onInput,
+            ...extraProps
+        })
+    }
+    
+    
+    const ComponentNameMap: any = {
+        ${componentList.reduce((acc, component) => {
+                acc = acc + `"${component.name}": ${component.name},\n`
+                return acc;
+            }, "")}
+    }
+    
+    export interface IMetaDataHook {
+        element: React.ReactElement,
+        input?: any;
+    }
+            
+            `;
+    
+        }
+
     checkForFolderAndCreateReactNativeApp() {
         return new Promise(async (checkRes) => {
             const rnSectionList: IRNSection[] = JSON.parse(FileHelper.readFile(`${this.configPath}/rnConfig.json`));
@@ -219,24 +308,25 @@ export default class RNHelper {
                     const modulePath = path.join(rnFolderPath, rnModule.name);
                     if (!FileHelper.exists(modulePath)) {
                         promises.push(new Promise(res => {
-                            runCommand(`npx @react-native-community/cli@latest init ${rnModule.name}`, rnFolderPath);
-                            runCommand(`npm install -D @tsconfig/react-native @types/jest @types/react @types/react-test-renderer typescript`, modulePath);
+                            runCommand(`npx @react-native-community/cli@latest init ${rnModule.name} --version 0.78.0`, rnFolderPath) ;
+                            runCommand(`npm install -D @tsconfig/react-native@3.0.5 @types/jest@29.5.14 @types/react@19.0.10 @types/react-test-renderer@19.0.0 typescript@5.0.4`, modulePath);
 
                             const dependencies = [
-                                '@react-navigation/bottom-tabs',
-                                '@react-navigation/drawer',
-                                '@react-navigation/material-top-tabs',
-                                '@react-navigation/native',
-                                '@react-navigation/native-stack',
-                                '@reduxjs/toolkit',
-                                'react-native-gesture-handler',
-                                'react-native-pager-view',
-                                'react-native-reanimated',
-                                'react-native-safe-area-context',
-                                'react-native-screens',
-                                'react-redux',
-                                'redux-saga',
-                                "axios"
+                                '@react-navigation/bottom-tabs@7.2.1',
+                                '@react-navigation/drawer@7.1.2',
+                                '@react-navigation/material-top-tabs@7.1.1',
+                                '@react-navigation/native@7.0.15',
+                                '@react-navigation/native-stack@7.2.1',
+                                '@reduxjs/toolkit@2.6.0',
+                                'react-native-gesture-handler@2.24.0',
+                                'react-native-pager-view@6.7.0',
+                                'react-native-reanimated@3.17.1',
+                                'react-native-safe-area-context@5.3.0',
+                                'react-native-screens@4.9.1',
+                                'react-redux@9.2.0',
+                                'redux-saga@1.3.0',
+                                "axios@1.8.1",
+                                "react-native-dotenv@3.4.11"
                               ];
                               runCommand(`npm install ${dependencies.join(' ')}`, modulePath);
                               FileHelper.writeFile(`${modulePath}/tsconfig.json`,`{
@@ -244,6 +334,21 @@ export default class RNHelper {
                                 }`);
 
                                 FileHelper.writeFile(`${modulePath}/App.tsx`,mainAppcode)
+                                FileHelper.writeFile(`${modulePath}/babel.config.js`,`module.exports = {
+                                    presets: ['module:@react-native/babel-preset'],
+                                    plugins: [
+                                      ['module:react-native-dotenv']
+                                    ]
+                                  };`)
+
+                                  FileHelper.writeFile(`${modulePath}/.env.dev`,"")
+                                  FileHelper.writeFile(`${modulePath}/.env.prod`,"")
+                                  FileHelper.writeFile(`${modulePath}/env.d.ts`,`
+                                    declare module '@env' {
+                                    export const API_URL: string;
+                                    export const APP_ENV: string;
+                                  }`)
+                                  
                                 
                             
                         }))
@@ -459,11 +564,68 @@ export default ${lo.name}Layout;
         }
     }
 
+    generateComponentCode(component: IRNComponent) {
+            return `
+            import React from "react";
+            import {Text} from "react-native";
+            import {I${component.name}Props} from './${component.name}MDP';
+            const ${component.name} = (props: I${component.name}Props) => {
+            return(
+                <Text>
+                ${component.name}
+                </Text>
+            )
+            }
+            
+            export default ${component.name};
+            `
+        }
+    
+    
+    
+    
+        generateComponentMDPCode(component: IRNComponent) {
+            const pathCode = '../../../' + component.path.split("/").reduce((acc,curVal) => {
+                acc = acc + '../'
+                return acc;
+            },"")
+            return `
+            import { MDP,IBasicComponent } from "${pathCode}src-gen/component/MDP";
+            
+    export class ${component.name}MDP implements I${component.name}MDP {
+        componentName: string = "${component.name}";
+        
+        getMetaData() {
+            return {
+                componentName: this.componentName,
+                props: {
+                }
+    
+            }
+        }
+    }
+    
+    export interface I${component.name}Props extends IBasicComponent {
+    }
+    export interface I${component.name}MDP extends MDP {
+    getMetaData: () => {componentName: string, props: I${component.name}Props}
+    }
+            `
+        }
+    
+    
+    
+    
+    
+    
+    
+    }
 
 
 
 
-}
+
+
 
 
 const mainAppcode = `

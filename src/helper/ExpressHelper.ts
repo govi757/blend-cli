@@ -2,7 +2,7 @@ import path from 'path';
 import { FileHelper } from './fileHelper';
 
 
-import { IApiSection, ApiType, IApiMainSection, IExpressSection, IApiDataField } from '../types/apiOperationTypes';
+import { IApiSection, ApiType, IApiMainSection, IExpressSection, IApiDataField, IApiSpec } from '../types/apiOperationTypes';
 import { IBasicProject } from '../types/basicOperationTypes';
 import { IDataField } from '../types/dataOperationTypes';
 import BlendApiGrammarHelper from './grammarHelper/BlendApiGrammarHelper';
@@ -156,6 +156,7 @@ export default class ExpressHelper {
         const envPath = path.join(sectionFolderPath, ".env.dev");
         const routesPath = path.join(sectionFolderPath, "src/routes/common/common.routes.config.ts");
         const authPath = path.join(sectionFolderPath, "src/middlewares/auth.ts");
+        const swaggerConfigPath = path.join(sectionFolderPath, "src/routes/swaggerConfig.ts");
         const packageFileCode = packageJSON;
         packageFileCode.name = projectName;
         FileHelper.createFile(packageFilePath, JSON.stringify(packageFileCode));
@@ -164,6 +165,7 @@ export default class ExpressHelper {
         FileHelper.createFile(envPath, envFileCode);
         FileHelper.createFile(routesPath, routesCode);
         FileHelper.createFile(authPath, authCode);
+        FileHelper.createFile(swaggerConfigPath, swaggerConfigCode);
 
 
     }
@@ -402,10 +404,20 @@ export default class ${serviceName} implements ${interfaceName} {
 
         configureRoutes(): express.Application {
 
+                /**
+ * @swagger
+ * tags:
+ *   - name: ${apiSection.name}
+ *     description: APIs inside ${apiSection.name}
+ */
+
             ${apiSection.apiList.reduce((acc, currVal) => {
             const inputName: string = (`${apiSection.name}_${currVal.name}_Input`).toUpperCase();
 
             acc = acc + `
+
+                    ${this.generateSwaggerSpecCode(expressSection,apiSection,currVal)}
+            
                     this.app.route('/${this.getApiName(expressSection.name)}/${this.getApiName(apiSection.name)}/${this.getApiName(currVal.name)}').${currVal.type.toLowerCase()}(${currVal.authenticated === true ? 'verifyToken,' : ''}async (req: express.Request, res: express.Response) => {
                         ${Object.keys(currVal.input).length > 0 ?
                     ` const input: ${inputName} = ${inputName}.fromJSON(${currVal.type == ApiType.Get ? 'req.query' : 'req.body'});
@@ -435,6 +447,94 @@ export default class ${serviceName} implements ${interfaceName} {
 
         return code;
     }
+
+    generateSwaggerSpecCode(expressSection: IExpressSection, apiSection: IApiSection, api: IApiSpec) {
+        const inputKeyList = Object.keys(api.input);
+    
+        if (api.type === ApiType.Get) {
+            return `
+            /**
+             * @swagger
+             * /${this.getApiName(expressSection.name)}/${this.getApiName(apiSection.name)}/${this.getApiName(api.name)}:
+             *   get:
+             *     security:
+             *       - BearerAuth: []
+             *     tags:
+             *       - ${apiSection.name}
+             *     parameters:
+    ${inputKeyList
+        .map((item) => {
+            const apiObj: IApiDataField = api.input[item];
+            return `         *       - in: query
+             *         name: ${item}
+             *         required: ${apiObj.required}
+             *         schema:
+             *           type: ${this.getType(apiObj.type)}`;
+        })
+        .join("\n")}
+             *     responses:
+             *       200:
+             *         description: Successful response
+             *         content:
+             *           application/json:
+             *             schema:
+             *               type: object
+             */
+            `;
+        } else {
+            return `
+            /**
+             * @swagger
+             * /${this.getApiName(expressSection.name)}/${this.getApiName(apiSection.name)}/${this.getApiName(api.name)}:
+             *   post:
+             *     security:
+             *       - BearerAuth: []
+             *     tags:
+             *       - ${apiSection.name}
+             *     requestBody:
+             *       required: true
+             *       content:
+             *         application/json:
+             *           schema:
+             *             type: object
+             *             required: [${inputKeyList
+                     .filter(inputKey => api.input[inputKey].required)
+                     .map(item => `"${item}"`)
+                     .join(", ")}]
+             *             properties:
+    ${inputKeyList
+        .map((item) => {
+            const apiObj: IApiDataField = api.input[item];
+            return `         *               ${item}:
+             *                 type: ${this.getType(apiObj.type)}`;
+        })
+        .join("\n")}
+             *     responses:
+             *       201:
+             *         description: Created successfully
+             *         content:
+             *           application/json:
+             *             schema:
+             *               type: object
+             */
+            `;
+        }
+    }
+    
+    
+    getType(type: string) {
+        const premitiveTypes = ["string","number","boolean","object"];
+        if(premitiveTypes.includes(type)) {
+            return type;
+        } else if(type.includes("[]")) {
+            return "array"
+        } else {
+            return "object"
+        }
+    }
+
+   
+    
 
 
     getApiName(apiName: string) {
@@ -537,20 +637,24 @@ const packageJSON = {
         "cors": "^2.8.5",
         "crypto": "^1.0.1",
         "debug": "^4.3.4",
+        "dotenv": "^16.3.1",
         "express": "^4.18.2",
         "express-jwt": "^8.4.1",
         "express-winston": "^4.2.0",
         "jsonwebtoken": "^9.0.0",
         "mongoose": "^6.8.1",
-        "winston": "^3.8.2",
-        "dotenv": "^16.3.1"
+        "winston": "^3.8.2"
     },
     "devDependencies": {
         "@types/bcrypt": "^5.0.0",
         "@types/cors": "^2.8.13",
         "@types/debug": "^4.1.7",
         "@types/express": "^4.17.15",
+        "@types/swagger-jsdoc": "^6.0.4",
+        "@types/swagger-ui-express": "^4.1.8",
         "source-map-support": "^0.5.21",
+        "swagger-jsdoc": "^6.2.8",
+        "swagger-ui-express": "^5.0.1",
         "tslint": "^6.1.3",
         "typescript": "^4.9.4"
     }
@@ -559,25 +663,35 @@ const packageJSON = {
 const envFileCode = `
 
 `;
+const envPath = "./.env.${process.env.NODE_ENV || 'dev'}";
 
 const appTsCode = `
+  
   import express from 'express';
 import * as http from 'http';
 
-import * as winston from 'winston';
-import * as expressWinston from 'express-winston';
 import cors from 'cors';
 import debug from 'debug';
 
-import bodyParser, {json, urlencoded} from 'body-parser';
+import {json, urlencoded} from 'body-parser';
 import mongoose from 'mongoose';
 import { CommonRoutesConfig } from './routes/common/common.routes.config';
 import dotenv from "dotenv";
-
+import UserRoutes from '../src-gen/api-routes/BaskyApi/User.routes';
+dotenv.config({ path: \`${envPath}\` });
+import { setupSwagger } from '../src/routes/swaggerConfig';
 const app: express.Application = express();
 
-const port = 3000;
+app.use(cors({
+  origin: '*', // ⚠️ Allow all origins (not recommended for production)
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true
+}));
+app.options('*', cors());
+const port = 8000;
 const routes: Array<CommonRoutesConfig> = [];
+routes.push(new UserRoutes(app))
 const debugLog: debug.IDebugger = debug('app');
 app.use((err: any, req:express.Request, res:express.Response, next:any) => {
     console.error(err.stack)
@@ -585,12 +699,9 @@ app.use((err: any, req:express.Request, res:express.Response, next:any) => {
   });
 app.use(express.json());
 
-app.use(cors());
 app.use(urlencoded());
 app.use(json());
-dotenv.config({ path: ".env.\${process.env.NODE_ENV}" });
 mongoose.set('strictQuery', false);
-
 const runningMessage = "Server running ats http://localhost:"+port;
 app.get('/', (req: express.Request, res: express.Response) => {
     
@@ -599,9 +710,10 @@ app.get('/', (req: express.Request, res: express.Response) => {
 
 
 const server: http.Server = http.createServer(app);
-
+setupSwagger(app);
 
 server.listen(port, () => {
+  console.log(process.env.NODE_ENV,process.env.API_URL,"process.env.API_URL")
     if(process.env.MONGO_DB_URL) {
     mongoose.connect(process.env.MONGO_DB_URL).then(mongoConnection => {
         console.log("Succesfully connected to the data base",routes)
@@ -611,10 +723,9 @@ server.listen(port, () => {
     routes.forEach((route: CommonRoutesConfig) => {
         
     });
-    // our only exception to avoiding console.log(), because we
-    // always want to know when the server is done starting up
     
 });
+  
   `
 
 const routesCode = `
@@ -659,4 +770,38 @@ const verifyToken = (req: any, res: any, next: any) => {
 
 export default verifyToken;
 
+  `
+
+
+  const swaggerConfigCode = `
+  import swaggerJSDoc from "swagger-jsdoc";
+import swaggerUi from "swagger-ui-express";
+import { Express } from "express";
+
+const options: swaggerJSDoc.Options = {
+  definition: {
+    openapi: "3.0.0",
+    info: {
+      title: "My API",
+      version: "1.0.0",
+      description: "API documentation",
+    },
+    servers: [
+      {
+        url: "http://localhost:8000", // Change this to match your environment
+      },
+    ],
+  },
+  // Specify the **patterns** for Swagger to scan all your route files
+  apis: ["src-gen/api-routes/**/*.ts"], // Adjust based on your folder structure
+};
+
+const swaggerSpec = swaggerJSDoc(options);
+
+export function setupSwagger(app: any) {
+  app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+}
+
+
+  
   `

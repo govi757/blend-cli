@@ -22,7 +22,13 @@ export interface IRNScreen{
     name: string,
     path: string
 }
+
+export interface IRNComponent{
+    name: string,
+    path: string
+}
 export interface IRNModule {
+    componentList: IRNComponent[],
     screenList: IRNScreen[],
    layout: IRNLayout[],
    name: string,

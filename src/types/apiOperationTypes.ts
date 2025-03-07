@@ -1,8 +1,8 @@
 export type IApiSpec = {
     name: string;
     type: string;
-    input: IApiDataField;
-    output: IApiDataField;
+    input: any;
+    output: any;
     authenticated?: boolean;
     directOutput?: IApiDataField;
 };
@@ -37,7 +37,7 @@ export interface IApiDataField {
 // }
 
 export enum ApiType {
-    Get="get",
-    Post="post",
-    Put="put"
+    Get="GET",
+    Post="POST",
+    Put="PUT"
 }

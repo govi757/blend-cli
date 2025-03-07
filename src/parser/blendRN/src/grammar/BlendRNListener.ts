@@ -6,6 +6,7 @@ import { ParseTreeListener } from "antlr4ts/tree/ParseTreeListener";
 import { ProgramContext } from "./BlendRNParser";
 import { ModuleDefinitionContext } from "./BlendRNParser";
 import { ScreenDefenitionContext } from "./BlendRNParser";
+import { ComponentDefenitionContext } from "./BlendRNParser";
 import { LayoutDefinitionContext } from "./BlendRNParser";
 import { PageDefinitionContext } from "./BlendRNParser";
 
@@ -47,6 +48,17 @@ export interface BlendRNListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	exitScreenDefenition?: (ctx: ScreenDefenitionContext) => void;
+
+	/**
+	 * Enter a parse tree produced by `BlendRNParser.componentDefenition`.
+	 * @param ctx the parse tree
+	 */
+	enterComponentDefenition?: (ctx: ComponentDefenitionContext) => void;
+	/**
+	 * Exit a parse tree produced by `BlendRNParser.componentDefenition`.
+	 * @param ctx the parse tree
+	 */
+	exitComponentDefenition?: (ctx: ComponentDefenitionContext) => void;
 
 	/**
 	 * Enter a parse tree produced by `BlendRNParser.layoutDefinition`.

@@ -1,10 +1,11 @@
 grammar BlendRN;
 
-program: moduleDefinition screenDefenition* layoutDefinition*;
+program: moduleDefinition componentDefenition* screenDefenition* layoutDefinition*;
 
 moduleDefinition: 'module' CAPITAL_IDENTIFIER;
 
 screenDefenition: 'screen' CAPITAL_IDENTIFIER (',' CAPITAL_IDENTIFIER)* 'under' PATH_IDENTIFIER ;
+componentDefenition: 'component' CAPITAL_IDENTIFIER (',' CAPITAL_IDENTIFIER)* 'under' PATH_IDENTIFIER ;
 
 layoutDefinition: 'layout' CAPITAL_IDENTIFIER '(' PATH_IDENTIFIER ')' 'type' '(' LAYOUT_TYPE ')' '{' pageDefinition* layoutDefinition* '}';
 pageDefinition: 'page' CAPITAL_IDENTIFIER '(' PATH_IDENTIFIER ')' 'view' '(' CAPITAL_IDENTIFIER ')';

@@ -50,11 +50,12 @@ export default class FrontEndApiHelper {
     generateRmoteApiPointsCode(currentApiSection: IApiMainSection) {
         let code = `
         import axios from 'axios';
+        import { API_URL } from '@env';
         ${currentApiSection.expressSectionList.reduce((acc, curVal) => {
             acc = acc + `export const ${curVal.name}Api = axios.create({
-baseURL: process.env.REACT_APP_API_URL||'http://localhost:8000', // Replace with your API base URL
+baseURL: API_URL||'http://localhost:8000', // Replace with your API base URL
 headers: {
-Authorization: localStorage.getItem("authToken")||""
+// Authorization: localStorage.getItem("authToken")||""
 }
 });
 \n
@@ -108,11 +109,16 @@ Authorization: localStorage.getItem("authToken")||""
     }
 
     generateSliceCode(apiSection: IApiSection) {
+        const filteredApiListForData = apiSection.apiList.filter(api => {
+            const inputKeyList = Object.keys(api.input);
+            const outputKeyList = Object.keys(api.output);
+            return inputKeyList.length>0||outputKeyList.length>0
+        })
         const code = `
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
 
-import { ${apiSection.apiList.reduce((acc, curVal) => {
+${filteredApiListForData.length>0?`import { ${apiSection.apiList.reduce((acc, curVal) => {
             const inputKeyList = Object.keys(curVal.input);
             const outputKeyList = Object.keys(curVal.output);
             const inputDataTypeName: string = (`${apiSection.name}_${curVal.name}_Input`).toUpperCase();
@@ -129,7 +135,17 @@ import { ${apiSection.apiList.reduce((acc, curVal) => {
             }
 
             return acc
-        }, '')}         
+        }, '')}     `:''}    
+
+            ${apiSection.apiList.reduce((acc, curVal) => {
+            if (curVal?.directOutput?.name) {
+                const [moduleName, dataName] = curVal?.directOutput?.name?.split("->");
+                acc = acc + `import {${dataName?.replace("[]","")}} from "../../../data/${moduleName}";`;
+            }
+
+            return acc
+        }, '')} 
+
 
 
 import { ApiStatus } from "../../../data/common";
@@ -275,8 +291,10 @@ export const GeneratedReducers = {
         ${filteredApiListForData.length>0?`import { ${filteredApiListForData.reduce((acc, curVal) => {
             const inputKeyList = Object.keys(curVal.input);
             const outputKeyList = Object.keys(curVal.output);
+            // const directOutputName = curVal.directOutput?.name;
             const inputDataTypeName: string = (`${apiSection.name}_${curVal.name}_Input`).toUpperCase();
             const outputDataTypeName: string = (`${apiSection.name}_${curVal.name}_Output`).toUpperCase();
+            // const directOutputDataTypeName: string = (`${apiSection.name}_${curVal.name}_Output`).toUpperCase();
             acc = acc + `${inputKeyList.length > 0 ? inputDataTypeName + ',' : ''}`;
             acc = acc + `${outputKeyList.length > 0 ? outputDataTypeName + ',' : ''}`;
             return acc
@@ -322,12 +340,12 @@ export const GeneratedReducers = {
         
 
               export const ${curVal.name}Api = async (${inputKeyList.length > 0 ? `input: ${inputDataTypeName},` : ``} ) => {
-                  return ${expressSection.name}Api.${curVal.type}('${this.getApiName(expressSection.name)}/${this.getApiName(apiSection.name)}/${this.getApiName(curVal.name)}',${inputKeyList.length > 0 ? `${curVal.type == 'post' ? 'input' : '{params: input.toJSON()}'}` : ''});
+                  return ${expressSection.name}Api.${curVal.type.toLowerCase()}('${this.getApiName(expressSection.name)}/${this.getApiName(apiSection.name)}/${this.getApiName(curVal.name)}',${inputKeyList.length > 0 ? `${curVal.type == 'post' ? 'input' : '{params: input.toJSON()}'}` : ''});
               }
 
               export const call${this.capitalizeFirstLetter(curVal.name)}Api = async (${inputKeyList.length > 0 ? `input: ${inputDataTypeName},` : ``} output: (output: ${outputKeyList.length > 0 ? outputDataTypeName :dataName?dataName: 'any'}) => any,error: (errMsg: any) => void) => {
                 try {
-                  //const { data } = await ${expressSection.name}Api.${curVal.type}('${this.getApiName(apiSection.name)}/${this.getApiName(curVal.name)}',${inputKeyList.length > 0 ? `${curVal.type == 'post' ? 'input' : '{params: input.toJSON()}'}` : ''});
+                  //const { data } = await ${expressSection.name}Api.${curVal.type.toLowerCase()}('${this.getApiName(apiSection.name)}/${this.getApiName(curVal.name)}',${inputKeyList.length > 0 ? `${curVal.type == 'post' ? 'input' : '{params: input.toJSON()}'}` : ''});
                   const { data } = await ${curVal.name}Api(${inputKeyList.length > 0 ? `${curVal.type == 'post' ? 'input' : 'input'}` : ''});
                   return output(data);
                 } catch (err: any) {
