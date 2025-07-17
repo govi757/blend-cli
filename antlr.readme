@@ -1,0 +1,1 @@
+npx antlr4ts -o src/parser/blendRnBasic src/grammar/BlendRnBasic.g4

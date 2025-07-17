@@ -304,9 +304,9 @@ export const GeneratedReducers = {
             apiSection.apiList.reduce((acc, curVal) => {
             if (curVal?.directOutput?.name) {
                 const [moduleName, dataName] = curVal?.directOutput?.name?.split("->");
-                console.log(dataName,moduleName,"DataName...........")
+                // console.log(dataName,moduleName,"DataName...........")
                 if(dataName) {
-                    acc = acc + `import {${dataName?.replace("[]","")}} from "../../../data/${moduleName}";`;
+                    acc = acc + `import * as ${moduleName} from "../../../data/${moduleName}";`;
                 }
                 
             }
@@ -346,13 +346,13 @@ export const GeneratedReducers = {
         
 
               export const ${curVal.name}Api = async (${inputKeyList.length > 0 ? `input: ${inputDataTypeName},` : ``} ) => {
-                  return ${expressSection.name}Api.${curVal.type.toLowerCase()}('${this.getApiName(expressSection.name)}/${this.getApiName(apiSection.name)}/${this.getApiName(curVal.name)}',${inputKeyList.length > 0 ? `${curVal.type == 'post' ? 'input' : '{params: input.toJSON()}'}` : ''});
+                  return ${expressSection.name}Api.${curVal.type.toLowerCase()}('${this.getApiName(expressSection.name)}/${this.getApiName(apiSection.name)}/${this.getApiName(curVal.name)}',${inputKeyList.length > 0 ? `${curVal.type == 'POST' ? 'input' : '{params: input.toJSON()}'}` : ''});
               }
 
-              export const call${this.capitalizeFirstLetter(curVal.name)}Api = async (${inputKeyList.length > 0 ? `input: ${inputDataTypeName},` : ``} output: (output: ${outputKeyList.length > 0 ? outputDataTypeName :dataName?dataName: 'any'}) => any,error: (errMsg: any) => void) => {
+              export const call${this.capitalizeFirstLetter(curVal.name)}Api = async (${inputKeyList.length > 0 ? `input: ${inputDataTypeName},` : ``} output: (output: ${outputKeyList.length > 0 ? outputDataTypeName :dataName?`${moduleName}.${dataName}`: 'any'}) => any,error: (errMsg: any) => void) => {
                 try {
-                  //const { data } = await ${expressSection.name}Api.${curVal.type.toLowerCase()}('${this.getApiName(apiSection.name)}/${this.getApiName(curVal.name)}',${inputKeyList.length > 0 ? `${curVal.type == 'post' ? 'input' : '{params: input.toJSON()}'}` : ''});
-                  const { data } = await ${curVal.name}Api(${inputKeyList.length > 0 ? `${curVal.type == 'post' ? 'input' : 'input'}` : ''});
+                  //const { data } = await ${expressSection.name}Api.${curVal.type.toLowerCase()}('${this.getApiName(apiSection.name)}/${this.getApiName(curVal.name)}',${inputKeyList.length > 0 ? `${curVal.type == 'POST' ? 'input' : '{params: input.toJSON()}'}` : ''});
+                  const { data } = await ${curVal.name}Api(${inputKeyList.length > 0 ? `${curVal.type == 'POST' ? 'input' : 'input'}` : ''});
                   return output(data);
                 } catch (err: any) {
                     return error(showError(err));

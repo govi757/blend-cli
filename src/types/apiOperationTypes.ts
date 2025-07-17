@@ -5,7 +5,12 @@ export type IApiSpec = {
     output: any;
     authenticated?: boolean;
     directOutput?: IApiDataField;
+    template?: IApiTemplate
 };
+export type IApiTemplate = {
+    type: TemplateType | string;
+    collection: string;
+}
 
 export type IApiMainSection = {
     name: string;
@@ -40,4 +45,11 @@ export enum ApiType {
     Get="GET",
     Post="POST",
     Put="PUT"
+}
+
+export enum TemplateType {
+    Add="Add",
+    Update="Update",
+    Delete="Delete",
+    Get = "Get"
 }

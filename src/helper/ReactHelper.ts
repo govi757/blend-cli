@@ -152,29 +152,45 @@ export default class ReactHelper {
             return acc;
         }, "")}`
         return `
-        import React, { useEffect, useState } from "react"
+        import React, { useCallback, useRef, useState } from "react";
         import { MDP } from "./MDP";
         ${importsCode}
         
 
-export const useMetaData: (props: { mdpClass: MDP, defaultInput?: any; onInput?: (val: any) => void; extraProps?: any }) => [element: React.ReactElement, input: any, setInput: any] = (props) => {
-    console.log(props.defaultInput, props.mdpClass, "defaultInput")
+export const useMetaData = (props: { 
+    mdpClass: MDP; 
+    defaultInput?: any; 
+    onInput?: (val: any) => void; 
+    extraProps?: any;
+    memoize?: boolean;
+}): [React.ReactElement, any, React.Dispatch<any>] => {
+    
+    console.log(props.defaultInput, props.mdpClass, "defaultInput");
+
     const [input, setInput] = useState(props.defaultInput);
+    const componentRef: any = useRef<React.ReactElement | null>(null);
 
+    // useEffect(() => {
+    //     setInput(props.defaultInput);
+    // }, [props.defaultInput]);
 
+    const handleInputChange = useCallback((val: any) => {
+        setInput(val);
+        props.onInput?.(val);
+    }, [props.onInput]);
 
+    
+    if (!componentRef.current || props.mdpClass !== componentRef.current.props.mdpClass || props.extraProps !== componentRef.current.props.extraProps) {
+        componentRef.current = generateElementFromMetaData({
+            componentClassMetaData: props.mdpClass.getMetaData(),
+            onInput: handleInputChange,
+            value: input,
+            extraProps: props.extraProps
+        });
+    }
 
-    return [generateElementFromMetaData({
-        componentClassMetaData: props.mdpClass.getMetaData(),
-        onInput: (val: any) => {
-            setInput(val);
-            props.onInput && props.onInput(val)
-        },
-        value: input,
-        extraProps: props.extraProps
-    }), input, setInput]
-}
-
+    return [componentRef.current, input, setInput];
+};
 
 export const generateElementFromMetaData = ({ componentClassMetaData, value, onInput, extraProps }: {
     componentClassMetaData: any;
@@ -189,6 +205,14 @@ export const generateElementFromMetaData = ({ componentClassMetaData, value, onI
         ...extraProps
     })
 }
+
+
+export const MetaDataContainer = (props: {mdp: MDP,value?: any, onInput?: (val: any)=>void,extraProps?:object}) => {
+    const componentClassMetaData = props.mdp.getMetaData();
+    return generateElementFromMetaData({...props,componentClassMetaData})
+}
+
+
 
 
 const ComponentNameMap: any = {
@@ -328,6 +352,7 @@ ${this.generateLayoutCode(lo, reactModule)}
 
         console.log([mainLayout],JSON.stringify([mainLayout]),"Main layout///////////////")
         const routerJsonCode = `const router = createBrowserRouter([${this.generateLayoutRouterJSONCode([mainLayout])}])\nexport default router;`
+        const routerConstant = this.generateRouterConstant(frontEnd.layout);
         console.log(this.generateFlattenedArray(mainLayout.children), "this.generateFlattenedArray(mainLayout.children)");
         const importCode = `${this.generateFlattenedArray(mainLayout.children).reduce((acc, item) => {
             const importCode = `   ${item.children ? `
@@ -338,7 +363,7 @@ ${this.generateLayoutCode(lo, reactModule)}
             acc = acc + importCode;
             return acc;
         }, "")}`;
-        return importCode + defaultImportCode + routerJsonCode;
+        return importCode + defaultImportCode + routerJsonCode + '\n'+routerConstant;
     }
     generateLayoutRouterJSONCode(layoutList: IReactLayout[]) {
         return layoutList.reduce((acc, layout) => {
@@ -387,7 +412,7 @@ ${this.generateLayoutCode(lo, reactModule)}
             }, {})
         }
 
-        return JSON.stringify(routeObj);
+        return `export const RouterConstant = ${JSON.stringify(routeObj)}`;
     }
 
     generateLayoutCode(lo: IReactLayout, frontEnd: IReactModule) {

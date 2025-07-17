@@ -1,10 +1,10 @@
 {
-  "name": "blend-cli",
+  "name": "blend-kit",
   "version": "1.0.1",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "tsc && copyfiles -u 1 template/**/* dist/",
+    "build": "tsc && copyfiles -u 1 template/**/* dist/ && cp -r src/ai-models dist/",
     "start": "node dist/index.js"
   },
   "keywords": [],
@@ -12,7 +12,10 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@tensorflow/tfjs-node": "^4.22.0",
     "commander": "^12.1.0",
+    "cors": "^2.8.5",
+    "express": "^5.1.0",
     "fs-extra": "^11.2.0"
   },
   "devDependencies": {

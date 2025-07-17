@@ -10,7 +10,7 @@ componentDefenition: 'component' CAPITAL_IDENTIFIER (',' CAPITAL_IDENTIFIER)* 'u
 layoutDefinition: 'layout' CAPITAL_IDENTIFIER '(' PATH_IDENTIFIER ')' '{' pageDefinition* layoutDefinition* '}';
 pageDefinition: 'page' CAPITAL_IDENTIFIER '(' PATH_IDENTIFIER ')' 'view' '(' CAPITAL_IDENTIFIER ')';
 
-PATH_IDENTIFIER: '"' [a-zA-Z0-9_/]* '"';
+PATH_IDENTIFIER: '"' [a-zA-Z0-9_/:]* '"';
 IDENTIFIER: [a-z_][a-zA-Z0-9_]*;
 CAPITAL_IDENTIFIER: [A-Z][a-zA-Z0-9_]*;
 WS: [ \t\r\n]+ -> skip;

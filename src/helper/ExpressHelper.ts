@@ -6,6 +6,8 @@ import { IApiSection, ApiType, IApiMainSection, IExpressSection, IApiDataField, 
 import { IBasicProject } from '../types/basicOperationTypes';
 import { IDataField } from '../types/dataOperationTypes';
 import BlendApiGrammarHelper from './grammarHelper/BlendApiGrammarHelper';
+import APILabelAIHelper from '../ai-models/api-label/APILabelHelper';
+import { IMongoSection } from '../types/mongoOperationTypes';
 export default class ExpressHelper {
     basicFilePath: string;
     folderName: string;
@@ -61,18 +63,19 @@ export default class ExpressHelper {
         this.basicProjectContent.sectionList.forEach(section => {
             const sectionName = section.name;
             const sectionFolderPath = path.join(this.folderPath, 'spec', sectionName);
-            const expressSectionList: IExpressSection[]=[];
+            const expressSectionList: IExpressSection[] = [];
             // Ensure the section folder and its data subfolder exist
             const apiFolderPath = path.join(sectionFolderPath, 'api');
 
             section.expressModuleList.forEach(module => {
-                    const filePath = path.join(apiFolderPath, `${module.name}.express`);
-                    const specCode = FileHelper.readFile(filePath);
-                    const json = new BlendApiGrammarHelper().parseBlendApi(specCode);
-                    if(!json.isValid) {
-                        throw new Error("Error while parsing the syntax");
-                    }
-                    expressSectionList.push(json.json);
+                const filePath = path.join(apiFolderPath, `${module.name}.express`);
+                const specCode = FileHelper.readFile(filePath);
+                let currentSection = this.basicProjectContent.sectionList.find(item =>item.name === sectionName);
+                const json = new BlendApiGrammarHelper().parseBlendApi(specCode,currentSection.dataModuleList||[]);
+                if (!json.isValid) {
+                    throw new Error("Error while parsing the syntax");
+                }
+                expressSectionList.push(json.json);
             });
             let sectionObj = {
                 name: sectionName,
@@ -81,7 +84,7 @@ export default class ExpressHelper {
 
             apiMainSectionList.push(sectionObj);
 
-            
+
         })
 
         FileHelper.writeFile(`${this.configPath}/apiConfig.json`, JSON.stringify(apiMainSectionList));
@@ -92,57 +95,58 @@ export default class ExpressHelper {
     parseJSONAndGenerateFiles() {
         const apiMainSectionList: IApiMainSection[] = JSON.parse(FileHelper.readFile(`${this.configPath}/apiConfig.json`));
         apiMainSectionList.forEach(sectionApi => {
+            // console.log(sectionApi.name,"sectionApisectionApisectionApisectionApisectionApisectionApisectionApisectionApi")
             const mainSectionPath = path.join(this.folderPath, `module/${sectionApi.name}`);
             sectionApi.expressSectionList.forEach(expressSection => {
                 const expressPath = path.join(mainSectionPath, `express/${sectionApi.name}-api`);
                 expressSection.apiSectionList.forEach(apiSection => {
                     // const apiPath = ``
-                    this.writeApi(apiSection, expressPath,expressSection);
-                    this.writeInterfaceCode(apiSection, expressPath,expressSection)
-                    this.writeApiDatacode(apiSection, expressPath,expressSection);
-                    this.writeRouteCode(apiSection, expressPath,expressSection);
+                    this.writeApi(apiSection, expressPath, expressSection,sectionApi.name);
+                    this.writeInterfaceCode(apiSection, expressPath, expressSection,sectionApi.name)
+                    this.writeApiDatacode(apiSection, expressPath, expressSection);
+                    this.writeRouteCode(apiSection, expressPath, expressSection);
                 })
             })
         })
     }
 
-    writeApi(apiSection: IApiSection, expressPath: string, expressSection: IExpressSection) {
-        const apiCode = this.generateApiCode(apiSection,expressSection);
+    writeApi(apiSection: IApiSection, expressPath: string, expressSection: IExpressSection,mainSectionName: string) {
+        const apiCode = this.generateApiCode(apiSection, expressSection,mainSectionName);
         const apiPath = `${expressPath}/src/services/${expressSection.name}`;
         const fileName = `${apiSection.name}/${apiSection.name}.service.ts`
         FileHelper.createFile(`${apiPath}/${fileName}`, apiCode);
     }
 
 
-    writeInterfaceCode(apiSection: IApiSection, expressPath: string,expressSection: IExpressSection) {
+    writeInterfaceCode(apiSection: IApiSection, expressPath: string, expressSection: IExpressSection,mainSectionName: string) {
         const interfacePath = `${expressPath}/src-gen/api-interfaces/${expressSection.name}`;
         const fileName = `${apiSection.name}.interface.ts`
-        const code = this.generateApiInterfaceCode(apiSection,expressSection);
+        const code = this.generateApiInterfaceCode(apiSection, expressSection,mainSectionName);
         FileHelper.writeFile(`${interfacePath}/${fileName}`, code);
     }
 
-    writeApiDatacode(apiSection: IApiSection, expressPath: string,expressSection: IExpressSection) {
+    writeApiDatacode(apiSection: IApiSection, expressPath: string, expressSection: IExpressSection) {
         const dataPath = `${expressPath}/src-gen/api-data/${expressSection.name}`;
         const fileName = `${apiSection.name}.data.ts`
         const code = this.generateSampleApiDataCode(apiSection);
         FileHelper.writeFile(`${dataPath}/${fileName}`, code);
     }
 
-    writeRouteCode(apiSection: IApiSection, expressPath: string,expressSection: IExpressSection) {
+    writeRouteCode(apiSection: IApiSection, expressPath: string, expressSection: IExpressSection) {
         const dataPath = `${expressPath}/src-gen/api-routes/${expressSection.name}`;
         const fileName = `${apiSection.name}.routes.ts`
-        const code = this.generateRoutesCode(apiSection,expressSection);
+        const code = this.generateRoutesCode(apiSection, expressSection);
         FileHelper.writeFile(`${dataPath}/${fileName}`, code);
     }
 
 
     createExpressProject() {
         this.basicProjectContent.sectionList.forEach(section => {
-            if(section.expressModuleList&&section.expressModuleList.length>0) {
+            if (section.expressModuleList && section.expressModuleList.length > 0) {
                 this.createProject(section.name, `${section.name}-api`);
             }
         })
-       
+
     }
 
     createProject(sectionName: string, projectName: string) {
@@ -174,7 +178,7 @@ export default class ExpressHelper {
 
 
 
-    generateApiInterfaceCode(apiSection: IApiSection,expressSection: IExpressSection) {
+    generateApiInterfaceCode(apiSection: IApiSection, expressSection: IExpressSection,mainSectionName: string) {
         const interfaceName: string = `I${apiSection.name}Api`;
         const sectionName: string = `${apiSection.name}Service`;
         const apiCode = this.generateApiFunctionCodes(apiSection);
@@ -211,7 +215,7 @@ ${apiCode}
         return code;
     }
 
-    generateSampleApiDataCode(apiSection: IApiSection,type="api") {
+    generateSampleApiDataCode(apiSection: IApiSection, type = "api") {
         const code = `
         ${apiSection.apiList.reduce((acc: string, api) => {
             const inputKeyList = Object.keys(api.input);
@@ -219,31 +223,31 @@ ${apiCode}
             const inputDataTypeName: string = (`${apiSection.name}_${api.name}_Input`).toUpperCase();
             const outputDataTypeName: string = (`${apiSection.name}_${api.name}_Output`).toUpperCase();
             const imports = new Set<string>(); // Collect unique imports
-            inputKeyList.forEach(inputKey=>{
+            inputKeyList.forEach(inputKey => {
                 const typeParts = api.input[inputKey].type.split("->");
                 if (typeParts.length === 2) {
                     const [module, typeName] = typeParts;
                     const baseTypeName = typeName.endsWith("[]") ? typeName.slice(0, -2) : typeName;
-                    if(type==="api") {
+                    if (type === "api") {
                         imports.add(`import { ${baseTypeName} } from '../data/${module}';`);
                     } else {
                         imports.add(`import { ${baseTypeName} } from '../../../../data/${module}';`);
                     }
-                    
+
                 }
             })
 
-            outputKeyList.forEach(outputKey=>{
+            outputKeyList.forEach(outputKey => {
                 const typeParts = api.output[outputKey].type.split("->");
                 if (typeParts.length === 2) {
                     const [module, typeName] = typeParts;
                     const baseTypeName = typeName.endsWith("[]") ? typeName.slice(0, -2) : typeName;
-                    if(type==="api") {
+                    if (type === "api") {
                         imports.add(`import { ${baseTypeName} } from '../data/${module}';`);
                     } else {
                         imports.add(`import { ${baseTypeName} } from '../../../../data/${module}';`);
                     }
-                    
+
                 }
             })
             acc = acc + `
@@ -255,41 +259,41 @@ export class ${inputDataTypeName} {
    
             constructor(
     ${inputKeyList
-                                .map(
-                                    (inputKey) =>
-                                        `        public ${inputKey}: ${this.resolveType(api.input[inputKey].type)}${!api.input[inputKey].required ? '|undefined' : ''} = ${this.getDefaultValue(
-                                            api.input[inputKey]
-                                        )},`
-                                )
-                                .join('\n')}
+                        .map(
+                            (inputKey) =>
+                                `        public ${inputKey}: ${this.resolveType(api.input[inputKey].type)}${!api.input[inputKey].required ? '|undefined' : ''} = ${this.getDefaultValue(
+                                    api.input[inputKey]
+                                )},`
+                        )
+                        .join('\n')}
         ) {}
         
       static fromJSON(jsonObj: any):${inputDataTypeName} {
             return new ${inputDataTypeName}(
     ${inputKeyList
-                                .map((inputKey) => this.generateFromJSONField({...api.input[inputKey],name: inputKey}))
-                                .join(',\n')}
+                        .map((inputKey) => this.generateFromJSONField({ ...api.input[inputKey], name: inputKey }))
+                        .join(',\n')}
             );
         }
 
          toJSON():object {
             return {
     ${inputKeyList
-                                .map((inputKey) => this.generateToJSONField({...api.input[inputKey],name: inputKey}))
-                                .join('\n')}
+                        .map((inputKey) => this.generateToJSONField({ ...api.input[inputKey], name: inputKey }))
+                        .join('\n')}
         };
         }
 
     checkDefaultPreCondition() {
         const error: any = {};
         ${inputKeyList.reduce((acc, inputKey) => {
-                acc = acc + `${api.input[inputKey].required == true ?
-                    `if(!this.${inputKey}) {
+                            acc = acc + `${api.input[inputKey].required == true ?
+                                `if(!this.${inputKey}) {
                 error['${inputKey}']="${inputKey} is required"
              }`
-                    : ``}`
-                return acc
-            }, "")}
+                                : ``}`
+                            return acc
+                        }, "")}
         return {
             isValid: Object.keys(error).length==0,
             errorBody: error
@@ -301,20 +305,20 @@ ${outputKeyList.length > 0 ? `export class ${outputDataTypeName} {
    
 constructor(
   ${outputKeyList
-                                .map(
-                                    (outputKey) =>
-                                        `        public ${outputKey}: ${this.resolveType(api.output[outputKey].type)}${!api.output[outputKey].required ? '|undefined' : ''} = ${this.getDefaultValue(
-                                            api.output[outputKey]
-                                        )},`
-                                )
-                                .join('\n')}
+                        .map(
+                            (outputKey) =>
+                                `        public ${outputKey}: ${this.resolveType(api.output[outputKey].type)}${!api.output[outputKey].required ? '|undefined' : ''} = ${this.getDefaultValue(
+                                    api.output[outputKey]
+                                )},`
+                        )
+                        .join('\n')}
         ) {}
 
  static fromJSON(jsonObj: any):${outputDataTypeName} {
             return new ${outputDataTypeName}(
     ${outputKeyList
-                                .map((outputKey) => this.generateFromJSONField({...api.output[outputKey],name: outputKey}))
-                                .join(',\n')}
+                        .map((outputKey) => this.generateFromJSONField({ ...api.output[outputKey], name: outputKey }))
+                        .join(',\n')}
             );
         }
 
@@ -322,8 +326,8 @@ constructor(
    toJSON():object {
             return {
     ${outputKeyList
-                                .map((outputKey) => this.generateToJSONField({...api.output[outputKey],name: outputKey}))
-                                .join('\n')}
+                        .map((outputKey) => this.generateToJSONField({ ...api.output[outputKey], name: outputKey }))
+                        .join('\n')}
         };
         }
         }
@@ -336,15 +340,20 @@ constructor(
         `
         return code
     }
-    generateApiCode(apiSection: IApiSection,expressSection: IExpressSection) {
+    generateApiCode(apiSection: IApiSection, expressSection: IExpressSection,mainSectionName: string) {
+
         const serviceName = `${apiSection.name}Service`;
         const interfaceName = `I${apiSection.name}Api`;
+        const totalInputs = apiSection.apiList.reduce((acc: number, currVal) => {
+            acc = acc + Object.keys(currVal.input).length;
+            return acc
+        }, 0);
         const code = `
     import express from 'express';\n
     import { ${interfaceName} } from '../../../../src-gen/api-interfaces/${expressSection.name}/${apiSection.name}.interface';\n
-${apiSection.apiList.length > 0 ? `import {${apiSection.apiList.reduce((acc: string, currVal) => {
+${apiSection.apiList.length > 0 && totalInputs > 0 ? `import {${apiSection.apiList.reduce((acc: string, currVal) => {
             const inputName: string = (`${apiSection.name}_${currVal.name}_Input`).toUpperCase();
-            acc = acc + inputName + ',';
+            acc = acc + `${Object.keys(currVal.input).length > 0 ? `${inputName + ','}` : ``}`;
             return acc
         }, '')}} from '../../../../src-gen/api-data/${expressSection.name}/${apiSection.name}.data';` : ''}
 
@@ -356,7 +365,8 @@ export default class ${serviceName} implements ${interfaceName} {
         return code;
     }
 
-    generateApiFunctionCodes(apiSection: IApiSection) {
+     generateApiFunctionCodes(apiSection: IApiSection) {
+
         return apiSection.apiList.reduce((acc, api) => {
             const inputName: string = (`${apiSection.name}_${api.name}_Input`).toUpperCase();
             acc = acc + `public async ${api.name}(${api.authenticated === true ? 'currentUser: any,' : ''}${Object.keys(api.input).length > 0 ? `input: ${inputName},` : ''} res: express.Response) {
@@ -373,9 +383,11 @@ export default class ${serviceName} implements ${interfaceName} {
             }\n`;
             return acc;
         }, "")
+
+        
     }
 
-    generateRoutesCode(apiSection: IApiSection,expressSection: IExpressSection) {
+    generateRoutesCode(apiSection: IApiSection, expressSection: IExpressSection) {
         const className = `${apiSection.name}Routes`;
         const serviceName = `${apiSection.name}Service`;
         const totalInputs = apiSection.apiList.reduce((acc: number, currVal) => {
@@ -416,7 +428,7 @@ export default class ${serviceName} implements ${interfaceName} {
 
             acc = acc + `
 
-                    ${this.generateSwaggerSpecCode(expressSection,apiSection,currVal)}
+                    ${this.generateSwaggerSpecCode(expressSection, apiSection, currVal)}
             
                     this.app.route('/${this.getApiName(expressSection.name)}/${this.getApiName(apiSection.name)}/${this.getApiName(currVal.name)}').${currVal.type.toLowerCase()}(${currVal.authenticated === true ? 'verifyToken,' : ''}async (req: express.Request, res: express.Response) => {
                         ${Object.keys(currVal.input).length > 0 ?
@@ -450,7 +462,7 @@ export default class ${serviceName} implements ${interfaceName} {
 
     generateSwaggerSpecCode(expressSection: IExpressSection, apiSection: IApiSection, api: IApiSpec) {
         const inputKeyList = Object.keys(api.input);
-    
+
         if (api.type === ApiType.Get) {
             return `
             /**
@@ -461,17 +473,17 @@ export default class ${serviceName} implements ${interfaceName} {
              *       - BearerAuth: []
              *     tags:
              *       - ${apiSection.name}
-             *     parameters:
+             *     parameters: ${inputKeyList.length == 0 ? '[]' : ''}
     ${inputKeyList
-        .map((item) => {
-            const apiObj: IApiDataField = api.input[item];
-            return `         *       - in: query
+                    .map((item) => {
+                        const apiObj: IApiDataField = api.input[item];
+                        return `         *       - in: query
              *         name: ${item}
              *         required: ${apiObj.required}
              *         schema:
              *           type: ${this.getType(apiObj.type)}`;
-        })
-        .join("\n")}
+                    })
+                    .join("\n")}
              *     responses:
              *       200:
              *         description: Successful response
@@ -498,17 +510,17 @@ export default class ${serviceName} implements ${interfaceName} {
              *           schema:
              *             type: object
              *             required: [${inputKeyList
-                     .filter(inputKey => api.input[inputKey].required)
-                     .map(item => `"${item}"`)
-                     .join(", ")}]
+                    .filter(inputKey => api.input[inputKey].required)
+                    .map(item => `"${item}"`)
+                    .join(", ")}]
              *             properties:
     ${inputKeyList
-        .map((item) => {
-            const apiObj: IApiDataField = api.input[item];
-            return `         *               ${item}:
+                    .map((item) => {
+                        const apiObj: IApiDataField = api.input[item];
+                        return `         *               ${item}:
              *                 type: ${this.getType(apiObj.type)}`;
-        })
-        .join("\n")}
+                    })
+                    .join("\n")}
              *     responses:
              *       201:
              *         description: Created successfully
@@ -520,21 +532,21 @@ export default class ${serviceName} implements ${interfaceName} {
             `;
         }
     }
-    
-    
+
+
     getType(type: string) {
-        const premitiveTypes = ["string","number","boolean","object"];
-        if(premitiveTypes.includes(type)) {
+        const premitiveTypes = ["string", "number", "boolean", "object"];
+        if (premitiveTypes.includes(type)) {
             return type;
-        } else if(type.includes("[]")) {
+        } else if (type.includes("[]")) {
             return "array"
         } else {
             return "object"
         }
     }
 
-   
-    
+
+
 
 
     getApiName(apiName: string) {
@@ -542,67 +554,67 @@ export default class ${serviceName} implements ${interfaceName} {
     }
 
     resolveType(type: string): string {
-            const typeParts = type.split("->");
-            const baseType = typeParts.length === 2 ? typeParts[1] : type;
-            return baseType.endsWith("[]") ? `${baseType.slice(0, -2)}[]` : baseType; // Handle array types
+        const typeParts = type.split("->");
+        const baseType = typeParts.length === 2 ? typeParts[1] : type;
+        return baseType.endsWith("[]") ? `${baseType.slice(0, -2)}[]` : baseType; // Handle array types
+    }
+
+    getDefaultValue(field: IDataField): string {
+        const typeParts = field.type.split("->");
+        const baseType = typeParts.length === 2 ? typeParts[1] : field.type;
+        if (baseType.endsWith("[]")) {
+            return "[]"; // Default value for arrays
         }
-    
-        getDefaultValue(field: IDataField): string {
-            const typeParts = field.type.split("->");
-            const baseType = typeParts.length === 2 ? typeParts[1] : field.type;
-            if (baseType.endsWith("[]")) {
-                return "[]"; // Default value for arrays
-            }
-            if (typeParts.length === 2) {
-                const [, typeName] = typeParts;
-                const baseTypeName = typeName.endsWith("[]") ? typeName.slice(0, -2) : typeName;
-                return `new ${baseTypeName}()`; // Instantiate the imported class
-            }
-            switch (field.type) {
-                case "string":
-                    return field.required ? "''" : "undefined";
-                case "object":
-                    return field.required ? "{}" : "undefined";
-                case "boolean":
-                    return field.required ? "false" : "undefined";
-                case "number":
-                    return field.required ? "0" : "undefined";
-                default:
-                    return "null";
-            }
+        if (typeParts.length === 2) {
+            const [, typeName] = typeParts;
+            const baseTypeName = typeName.endsWith("[]") ? typeName.slice(0, -2) : typeName;
+            return `new ${baseTypeName}()`; // Instantiate the imported class
         }
-    
-        generateFromJSONField(field: IDataField): string {
-            console.log(field,"field")
-            const typeParts = field.type.split("->");
-            const baseType = typeParts.length === 2 ? typeParts[1] : field.type;
-            if (baseType.endsWith("[]")) {
-                const elementType = baseType.slice(0, -2);
-                if (["string", "number", "boolean"].includes(elementType)) {
-                    return `            jsonObj.${field.name} ?? []`;
-                }
-                return `            (jsonObj.${field.name} != null) ? jsonObj.${field.name}.map((item: any) => ${elementType}.fromJSON(item)) : []`;
-            }
-            if (typeParts.length === 2) {
-                const [, typeName] = typeParts;
-                const baseTypeName = typeName.endsWith("[]") ? typeName.slice(0, -2) : typeName;
-                return `            (jsonObj.${field.name} != null) ? ${baseTypeName}.fromJSON(jsonObj.${field.name}) : new ${baseTypeName}()`;
-            }
-            return `            (jsonObj.${field.name} !== null) ? jsonObj?.${field.name} : undefined`;
+        switch (field.type) {
+            case "string":
+                return field.required ? "''" : "undefined";
+            case "object":
+                return field.required ? "{}" : "undefined";
+            case "boolean":
+                return field.required ? "false" : "undefined";
+            case "number":
+                return field.required ? "0" : "undefined";
+            default:
+                return "null";
         }
-    
-        generateToJSONField(field: IApiDataField): string {
-            const typeParts = field.type.split("->");
-            const baseType = typeParts.length === 2 ? typeParts[1] : field.type;
-            if (baseType.endsWith("[]")) {
-                const elementType = baseType.slice(0, -2);
-                if (["string", "number", "boolean"].includes(elementType)) {
-                    return `            ${field.name}: this.${field.name} ?? [],`;
-                }
-                return `            ${field.name}: (this.${field.name} != null) ? this.${field.name}.map((x) => x.toJson()) : [],`;
+    }
+
+    generateFromJSONField(field: IDataField): string {
+        console.log(field, "field")
+        const typeParts = field.type.split("->");
+        const baseType = typeParts.length === 2 ? typeParts[1] : field.type;
+        if (baseType.endsWith("[]")) {
+            const elementType = baseType.slice(0, -2);
+            if (["string", "number", "boolean"].includes(elementType)) {
+                return `            jsonObj.${field.name} ?? []`;
             }
-            return `            ${field.name}: this.${field.name} != null ? this.${field.name} : undefined,`;
+            return `            (jsonObj.${field.name} != null) ? jsonObj.${field.name}.map((item: any) => ${elementType}.fromJSON(item)) : []`;
         }
+        if (typeParts.length === 2) {
+            const [, typeName] = typeParts;
+            const baseTypeName = typeName.endsWith("[]") ? typeName.slice(0, -2) : typeName;
+            return `            (jsonObj.${field.name} != null) ? ${baseTypeName}.fromJSON(jsonObj.${field.name}) : new ${baseTypeName}()`;
+        }
+        return `            (jsonObj.${field.name} !== null) ? jsonObj?.${field.name} : undefined`;
+    }
+
+    generateToJSONField(field: IApiDataField): string {
+        const typeParts = field.type.split("->");
+        const baseType = typeParts.length === 2 ? typeParts[1] : field.type;
+        if (baseType.endsWith("[]")) {
+            const elementType = baseType.slice(0, -2);
+            if (["string", "number", "boolean"].includes(elementType)) {
+                return `            ${field.name}: this.${field.name} ?? [],`;
+            }
+            return `            ${field.name}: (this.${field.name} != null) ? this.${field.name}.map((x) => x.toJson()) : [],`;
+        }
+        return `            ${field.name}: this.${field.name} != null ? this.${field.name} : undefined,`;
+    }
 }
 
 
@@ -773,7 +785,7 @@ export default verifyToken;
   `
 
 
-  const swaggerConfigCode = `
+const swaggerConfigCode = `
   import swaggerJSDoc from "swagger-jsdoc";
 import swaggerUi from "swagger-ui-express";
 import { Express } from "express";
