@@ -1,4 +1,4 @@
-// Generated from /Users/govindve/govi/Projects/NodeProjects/blend-cli/src/grammar/BlendExpress.g4 by ANTLR 4.13.1
+// Generated from /Users/govindve/govi/Projects/NodeProjects/blend-cli/src/grammar/BlendApi.g4 by ANTLR 4.13.1
 import org.antlr.v4.runtime.Lexer;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.Token;
@@ -94,7 +94,7 @@ public class BlendApiLexer extends Lexer {
 	}
 
 	@Override
-	public String getGrammarFileName() { return "BlendExpress.g4"; }
+	public String getGrammarFileName() { return "BlendApi.g4"; }
 
 	@Override
 	public String[] getRuleNames() { return ruleNames; }

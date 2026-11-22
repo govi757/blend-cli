@@ -109,7 +109,7 @@ headers: {
     }
 
     generateSliceCode(apiSection: IApiSection) {
-        let includedModuleList = [];
+        let includedModuleList: any = [];
         const filteredApiListForData = apiSection.apiList.filter(api => {
             const inputKeyList = Object.keys(api.input);
             const outputKeyList = Object.keys(api.output);

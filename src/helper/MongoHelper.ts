@@ -116,19 +116,26 @@ import { Schema, model, connect, Types } from 'mongoose';\n
 import {${interfaceName}} from './interfaces';
 const ${collection.name}Schema = new Schema<${interfaceName}>({
     ${collection.fields.reduce((acc: any, currVal) => {
-            acc = acc + `${currVal.name}: {type: ${currVal.type} ${currVal.required ? ',required:true' : ''} ${currVal.index ? ",index:true" : ""}${currVal.unique ? ',unique:true' : ''}${currVal.ref ? `,ref:"${currVal.ref}"` : ''}},\n\t`;
+        const type = this.getCollectionType(currVal.type);
+            acc = acc + `${currVal.name}: {type: ${type} ${currVal.required ? ',required:true' : ''} ${currVal.index ? ",index:true" : ""}${currVal.unique ? ',unique:true' : ''}${currVal.ref ? `,ref:"${currVal.ref}"` : ''}},\n\t`;
             return acc;
         }, "")
             }
 });
 
-const ${collection.name} = Database.${dbName}Db.model<${interfaceName}>('${collection.name}', ${collection.name}Schema);
+const ${collection.name} = Database.${dbName}Db.model<${interfaceName}>('${collection.name}', ${collection.name}Schema,'${CommonHelper.hyphenSepratedString(collection.name)}');
 
 export default ${collection.name};
 `
         return code;
     }
 
+    getCollectionType(type: string) {
+        if(type.endsWith("[]")) {
+            return  `[${type.slice(0, -2)}]`;
+        }
+        return type;
+    }
 
     generateCollectionInterfaceCode(collectionList: ICollection[], dbName: string) {
         const code = 'import { ObjectId } from "mongoose";\n'+ collectionList.reduce((acc, collection) => {

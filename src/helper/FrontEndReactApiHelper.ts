@@ -38,7 +38,6 @@ export default class FrontEndReactApiHelper {
                 FileHelper.createFile(`${rnProjectPath}/src/remote-api-point.ts`, rapcode);
                 FileHelper.createFile(`${rnProjectPath}/src/src-gen/data/common.ts`, commonApiDataCode);
                 FileHelper.createFile(`${rnProjectPath}/src/redux/store/store.ts`, mainStoreCode);
-                FileHelper.createFile(`${rnProjectPath}/src/redux/store/saga.ts`, mainSagaCode);
                 FileHelper.createFile(`${rnProjectPath}/src/redux/store/snackbar/snackbarSlice.ts`, snackbarSliceCode);
                 FileHelper.createFile(`${rnProjectPath}/src/redux/hooks.ts`, hooksCode);
 
@@ -79,28 +78,22 @@ Authorization: localStorage.getItem("authToken")||""
                     const rnApiPath = path.join(rnProjectPath, `src/src-gen/redux/${expressSection.name}`);
                     const rnReducerPath = path.join(rnProjectPath, `src/src-gen/redux/gen-reducers.ts`);
                     const reducerCode = this.generateReducersCode(expressSection.apiSectionList, expressSection.name);
-                    const rnSagaPath = path.join(rnProjectPath, `src/src-gen/redux/gen-root-saga.ts`);
-                    const rootSagaCode = this.generateRootSagaCode(expressSection.apiSectionList, expressSection.name);
                     FileHelper.writeFile(rnReducerPath, reducerCode);
-                    FileHelper.writeFile(rnSagaPath, rootSagaCode);
 
 
                     expressSection.apiSectionList.forEach(apiSection => {
                         const apiSectionSlicePath = path.join(rnApiPath, apiSection.name, `${apiSection.name}Slice.ts`);
                         const apiSectionDataPath = path.join(rnApiPath, apiSection.name, `data.ts`);
                         const apiSectionActionPath = path.join(rnApiPath, apiSection.name, `action.ts`);
-                        const apiSectionSagaPath = path.join(rnApiPath, apiSection.name, `${apiSection.name}Saga.ts`);
                         const sliceCode = this.generateSliceCode(apiSection);
                         const dataCode = this.generateApiDatacode(apiSection);
                         const actionCode = this.generateApiActioncode(apiSection, expressSection);
-                        const sagaCode = this.generateSagaCode(apiSection);
                         FileHelper.writeFile(apiSectionSlicePath, sliceCode);
                         if(!this.isEmptyOrWhitespace(dataCode)) {
                             FileHelper.writeFile(apiSectionDataPath, dataCode);
                         }
-                        
+
                         FileHelper.writeFile(apiSectionActionPath, actionCode);
-                        FileHelper.writeFile(apiSectionSagaPath, sagaCode);
 
                     })
                 })
@@ -123,7 +116,7 @@ Authorization: localStorage.getItem("authToken")||""
             return inputKeyList.length>0||outputKeyList.length>0
         })
         const code = `
-import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { createSlice } from "@reduxjs/toolkit";
 
 
 ${filteredApiListForData.length>0?`import { ${filteredApiListForData.reduce((acc, curVal) => {
@@ -137,20 +130,21 @@ ${filteredApiListForData.length>0?`import { ${filteredApiListForData.reduce((acc
         }, '')} } from "./data";`:''}
 
         ${
-            apiSection.apiList.reduce((acc, curVal) => {
+            apiSection.apiList.reduce((acc: {imports: string, seen: Set<string>}, curVal) => {
             if (curVal?.directOutput?.name) {
                 const [moduleName, dataName] = curVal?.directOutput?.name?.split("->");
-                console.log(dataName,moduleName,"DataName...........")
-                if(dataName) {
-                    acc = acc + `import {${dataName?.replace("[]","")}} from "../../../data/${moduleName}";`;
+                const cleanName = dataName?.replace("[]","");
+                if(cleanName && !acc.seen.has(cleanName)) {
+                    acc.seen.add(cleanName);
+                    acc.imports = acc.imports + `import {${cleanName}} from "../../../data/${moduleName}";`;
                 }
-                
+
             }
 
             return acc
-        }, '')}         
+        }, {imports: '', seen: new Set<string>()}).imports}
 
-
+import { ${apiSection.apiList.reduce((acc, curVal) => acc + `${curVal.name}Action,`, '')} } from "./action";
 import { ApiStatus } from "../../../data/common";
 interface ${apiSection.name}State {
     ${apiSection.apiList.reduce((acc, curVal) => {
@@ -185,82 +179,34 @@ export const ${apiSection.name}Slice = createSlice({
     initialState,
     reducers: {
         reset${apiSection.name}Reducer: () => initialState,
-        ${apiSection.apiList.reduce((acc, curVal, currentIndex) => {
-            const inputKeyList = Object.keys(curVal.input);
-            const inputDataTypeName: string = (`${apiSection.name}_${curVal.name}_Input`).toUpperCase();
+    },
+    extraReducers: (builder) => {
+        ${apiSection.apiList.reduce((acc, curVal) => {
             acc = acc + `
-    ${curVal.name}Action:(state:any, ${inputKeyList.length > 0 ? `payload:PayloadAction<${inputDataTypeName}>` : ``}) => {
+    builder.addCase(${curVal.name}Action.pending, (state) => {
         state.${curVal.name}.status = ApiStatus.Loading;
-        state.${curVal.name}.error = '';
-    },
-    ${curVal.name}SuccessAction:(state:any, payload:any) => {
+        state.${curVal.name}.error = null;
+    });
+    builder.addCase(${curVal.name}Action.fulfilled, (state, action) => {
         state.${curVal.name}.status = ApiStatus.Success;
-        state.${curVal.name}.data = payload.payload;
-    },
-    ${curVal.name}ErrorAction:(state:any, payload:any) => {
+        state.${curVal.name}.data = action.payload;
+    });
+    builder.addCase(${curVal.name}Action.rejected, (state, action) => {
         state.${curVal.name}.status = ApiStatus.Failed;
-        state.${curVal.name}.error = payload.error;
-    },
+        state.${curVal.name}.error = action.payload as string;
+    });
     `
             return acc;
         }, '')
-            } 
-}
-    
+            }
 });
-        
-export const {reset${apiSection.name}Reducer,${apiSection.apiList.reduce((acc, curVal, currentIndex) => {
-                acc = acc + `
-    ${curVal.name}Action,${curVal.name}SuccessAction,${curVal.name}ErrorAction,
-    `; return acc
-            }, '')}} = ${apiSection.name}Slice.actions;
+
+export const {reset${apiSection.name}Reducer} = ${apiSection.name}Slice.actions;
 export default ${apiSection.name}Slice.reducer;
         `
         return code;
     }
 
-
-    generateSagaCode(apiSection: IApiSection) {
-        const code = `
-        import { put, takeLatest } from "redux-saga/effects";
-        import { PayloadAction } from "@reduxjs/toolkit";
-        
-
-        import { ${apiSection.apiList.reduce((acc, curVal) => {
-            acc = acc + `${curVal.name}Api,`;
-            return acc
-        }, '')} }from './action';
-
-        import { ${apiSection.apiList.reduce((acc, curVal) => {
-
-            acc = acc + `${curVal.name}SuccessAction,${curVal.name}ErrorAction,`;
-            return acc
-        }, '')} } from "./${apiSection.name}Slice";
-
-        ${apiSection.apiList.reduce((acc, curVal) => {
-            const inputKeyList = Object.keys(curVal.input);
-            acc = acc + `
-        function* ${curVal.name}Saga(action: PayloadAction<any>): any {
-        try {
-            const response: any = yield ${curVal.name}Api(${inputKeyList.length > 0 ? `action.payload` : ``})
-            yield put(${curVal.name}SuccessAction(response.data))
-        } catch(e: any) {
-            yield put(${curVal.name}ErrorAction(e));
-        }
-}
-
-        export function* watch${apiSection.name}${curVal.name}() {
-            yield takeLatest("${apiSection.name}/${curVal.name}Action", ${curVal.name}Saga);
-        }
-            `
-            return acc
-
-        }, '')}
-
-        `
-
-        return code;
-    }
 
     generateReducersCode(apiSectionList: IApiSection[], sectionName: string) {
         const code = `
@@ -288,7 +234,7 @@ export const GeneratedReducers = {
         })
         const code = `
         import { createAsyncThunk } from "@reduxjs/toolkit";
-        import axios, { AxiosError } from 'axios';
+        import { AxiosError } from 'axios';
         import {${expressSection.name}Api} from "../../../../remote-api-point";
         ${filteredApiListForData.length>0?`import { ${filteredApiListForData.reduce((acc, curVal) => {
             const inputKeyList = Object.keys(curVal.input);
@@ -301,18 +247,18 @@ export const GeneratedReducers = {
         }, '')} } from "./data";`:''}
 
         ${
-            apiSection.apiList.reduce((acc, curVal) => {
+            apiSection.apiList.reduce((acc: {imports: string, seen: Set<string>}, curVal) => {
             if (curVal?.directOutput?.name) {
                 const [moduleName, dataName] = curVal?.directOutput?.name?.split("->");
-                // console.log(dataName,moduleName,"DataName...........")
-                if(dataName) {
-                    acc = acc + `import * as ${moduleName} from "../../../data/${moduleName}";`;
+                if(dataName && !acc.seen.has(moduleName)) {
+                    acc.seen.add(moduleName);
+                    acc.imports = acc.imports + `import * as ${moduleName} from "../../../data/${moduleName}";`;
                 }
-                
+
             }
 
             return acc
-        }, '')}  
+        }, {imports: '', seen: new Set<string>()}).imports}
 
      
         
@@ -343,76 +289,27 @@ export const GeneratedReducers = {
             const outputDataTypeName: string = (`${apiSection.name}_${curVal.name}_Output`).toUpperCase();
             const [moduleName, dataName] = curVal?.directOutput?.name?.split("->")||[];
             acc = acc + `
-        
 
-              export const ${curVal.name}Api = async (${inputKeyList.length > 0 ? `input: ${inputDataTypeName},` : ``} ) => {
-                  return ${expressSection.name}Api.${curVal.type.toLowerCase()}('${this.getApiName(expressSection.name)}/${this.getApiName(apiSection.name)}/${this.getApiName(curVal.name)}',${inputKeyList.length > 0 ? `${curVal.type == 'POST' ? 'input' : '{params: input.toJSON()}'}` : ''});
-              }
-
-              export const call${this.capitalizeFirstLetter(curVal.name)}Api = async (${inputKeyList.length > 0 ? `input: ${inputDataTypeName},` : ``} output: (output: ${outputKeyList.length > 0 ? outputDataTypeName :dataName?`${moduleName}.${dataName}`: 'any'}) => any,error: (errMsg: any) => void) => {
-                try {
-                  //const { data } = await ${expressSection.name}Api.${curVal.type.toLowerCase()}('${this.getApiName(apiSection.name)}/${this.getApiName(curVal.name)}',${inputKeyList.length > 0 ? `${curVal.type == 'POST' ? 'input' : '{params: input.toJSON()}'}` : ''});
-                  const { data } = await ${curVal.name}Api(${inputKeyList.length > 0 ? `${curVal.type == 'POST' ? 'input' : 'input'}` : ''});
-                  return output(data);
-                } catch (err: any) {
-                    return error(showError(err));
-                }
-              }
+              export const ${curVal.name}Action = createAsyncThunk(
+                  "${apiSection.name}/${curVal.name}",
+                  async (${inputKeyList.length > 0 ? `input: ${inputDataTypeName}` : ``}, { rejectWithValue }) => {
+                      try {
+                          const { data } = await ${expressSection.name}Api.${curVal.type.toLowerCase()}('${this.getApiName(expressSection.name)}/${this.getApiName(apiSection.name)}/${this.getApiName(curVal.name)}',${inputKeyList.length > 0 ? `${curVal.type == 'POST' ? 'input' : '{params: input.toJSON()}'}` : ''});
+                          return data as ${outputKeyList.length > 0 ? outputDataTypeName :dataName?`${moduleName}.${dataName}`: 'any'};
+                      } catch (err: any) {
+                          return rejectWithValue(showError(err));
+                      }
+                  }
+              );
             `
             return acc
         }, '')}
-        
+
         `
 
         return code;
     }
 
-
-    generateRootSagaCode(apiSectionList: IApiSection[], expressSectionName: string) {
-        const code = `
-        import { all, fork } from "redux-saga/effects";
-        ${apiSectionList.reduce((acc, curVal) => {
-            acc = acc + `
-            import{
-    ${curVal.apiList.reduce((apiAcc, apiCurVal) => {
-                apiAcc = apiAcc + `
-         watch${curVal.name}${apiCurVal.name},
-        `;
-                return apiAcc
-            }, '')
-                }
-    } from './${expressSectionName}/${curVal.name}/${curVal.name}Saga';\n
-`
-            return acc;
-        }, '')}
-
-
-
-
-const genRootSaga = [
-
-    ${apiSectionList.reduce((acc, curVal) => {
-            acc = acc + `
-        
-${curVal.apiList.reduce((apiAcc, apiCurVal) => {
-                apiAcc = apiAcc + `
-    watch${curVal.name}${apiCurVal.name}()
-     ,
-    `;
-                return apiAcc
-            }, '')
-                }
-
-`
-            return acc;
-        }, '')}
-        
-];
-
-export default genRootSaga;
-`;
-        return code;
-    }
 
     getApiName(apiName: string) {
         return apiName.replace(/[A-Z]/g, m => "-" + m.toLowerCase()).replace(/^-/, '');
@@ -490,36 +387,19 @@ const mainStoreCode = `
 import { configureStore } from '@reduxjs/toolkit'
 import { GeneratedReducers } from '../../src-gen/redux/gen-reducers'
 import SnackbarReducer from './snackbar/snackbarSlice'
-import createSagaMiddleware from 'redux-saga';
-import rootSaga from '../../src-gen/redux/gen-root-saga';
-import { mySaga } from './saga';
-const reduxSagaMiddleWareOptions = {};
-  const sagaMiddleWare = createSagaMiddleware(reduxSagaMiddleWareOptions);
+
 export const store = configureStore({
     reducer: {
         ...GeneratedReducers,
         snackbar: SnackbarReducer,
     },
-    middleware: (getDefaultMiddleware) =>
-        getDefaultMiddleware().concat([sagaMiddleWare]),
-    
   })
-  sagaMiddleWare.run(mySaga)
 
-  export type RootState = ReturnType<typeof store.getState>  
+  export type RootState = ReturnType<typeof store.getState>
 
   export type AppDispatch = typeof store.dispatch;
 
 `;
-
-const mainSagaCode = `
-import { all, takeEvery } from "redux-saga/effects";
-import genRootSaga from "../../src-gen/redux/gen-root-saga";
-
-export function* mySaga() {
-    yield all([...genRootSaga]) 
-  }
-`
 
 const hooksCode = `
 import { useDispatch, useSelector } from 'react-redux'

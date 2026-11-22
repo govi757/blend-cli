@@ -206,9 +206,13 @@ export const generateElementFromMetaData = ({ componentClassMetaData, value, onI
     })
 }
 
-
 export const MetaDataContainer = (props: {mdp: MDP,value?: any, onInput?: (val: any)=>void,extraProps?:object}) => {
     const componentClassMetaData = props.mdp.getMetaData();
+    return generateElementFromMetaData({...props,componentClassMetaData})
+}
+
+export const MetaDataContainerWithObject = (props: {metadata: object,value?: any, onInput?: (val: any)=>void,extraProps?:object}) => {
+    const componentClassMetaData = props.metadata;
     return generateElementFromMetaData({...props,componentClassMetaData})
 }
 

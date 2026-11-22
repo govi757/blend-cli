@@ -116,7 +116,7 @@ program.command('prepare')
   });
 
 // Command 3: blend-generate (add your logic here)
-program.command('generate')
+program.command('serve')
   .description('Generate files or configurations based on existing ones')
   .action(async () => {
     const folderPath = path.join(process.cwd());
@@ -147,7 +147,7 @@ program.command('generate')
     // Add your custom logic here
   });
 
-program.command('cook')
+program.command('chop')
   .description('Generate files or configurations based on existing ones')
   .action(() => {
     const folderPath = path.join(process.cwd());

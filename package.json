@@ -1,10 +1,10 @@
 {
   "name": "blend-kit",
-  "version": "1.0.1",
+  "version": "1.0.4",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "tsc && copyfiles -u 1 template/**/* dist/ && cp -r src/ai-models dist/",
+    "build": "tsc && copyfiles -u 1 template/**/* dist/ && cp -r src/ai-models dist/ && npm link",
     "start": "node dist/index.js"
   },
   "keywords": [],

@@ -17,7 +17,7 @@ type: baseType
 
 baseType: primitiveType;
 
-primitiveType: 'String' | 'Number' | 'Boolean' | 'any' | 'Object';
+primitiveType: 'String' | 'Number' | 'Boolean' | 'any' | 'Object' | 'Date'|'Mixed';
 
 IDENTIFIER: [a-z_][a-zA-Z0-9_]*;
 CAPITAL_IDENTIFIER: [A-Z][a-zA-Z0-9_]*;

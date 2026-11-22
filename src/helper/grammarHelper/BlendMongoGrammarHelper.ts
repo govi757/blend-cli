@@ -1,7 +1,7 @@
 import { CharStreams, CommonTokenStream } from "antlr4ts";
 import { BlendMongoLexer } from "../../parser/blendMongo/src/grammar/BlendMongoLexer";
 import { BlendMongoParser } from "../../parser/blendMongo/src/grammar/BlendMongoParser";
-import { IDataBase } from "../../types/mongoOperationTypes";
+import { Field, IDataBase } from "../../types/mongoOperationTypes";
 
 export default class BlendMongoGrammarHelper {
     parseBlendMongo(code: string){
@@ -15,12 +15,13 @@ export default class BlendMongoGrammarHelper {
         const json: IDataBase = {
             dbName: moduleDefinition.CAPITAL_IDENTIFIER().text,
             collectionList: collectionDefinitionList.map(collectionDefinition => {
-                const propertyFields = collectionDefinition.property().map(property => {
+                const propertyFields: Field[] = collectionDefinition.property().map(property => {
                     return {
                         name: property.IDENTIFIER().text,
-                        type: property.type().text,
+                        type: property.type().text.replace("?", ""),
                         unique: property.propertyChars()?.mongoChars()?property.propertyChars()?.mongoChars()?.findIndex(item => item.text === "unique") !=-1: undefined,
                         index: property.propertyChars()?.mongoChars()?property.propertyChars()?.mongoChars()?.findIndex(item => item.text === "index") !=-1: undefined,
+                        required: property.type().text.includes("?")?false:true,
                         // ref: collectionDefinition.reference()?collectionDefinition.reference()?.CAPITAL_IDENTIFIER().text:undefined,
                     }
                 });

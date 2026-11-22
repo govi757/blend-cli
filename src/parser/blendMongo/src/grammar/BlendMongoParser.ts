@@ -45,9 +45,11 @@ export class BlendMongoParser extends Parser {
 	public static readonly T__16 = 17;
 	public static readonly T__17 = 18;
 	public static readonly T__18 = 19;
-	public static readonly IDENTIFIER = 20;
-	public static readonly CAPITAL_IDENTIFIER = 21;
-	public static readonly WS = 22;
+	public static readonly T__19 = 20;
+	public static readonly T__20 = 21;
+	public static readonly IDENTIFIER = 22;
+	public static readonly CAPITAL_IDENTIFIER = 23;
+	public static readonly WS = 24;
 	public static readonly RULE_program = 0;
 	public static readonly RULE_moduleDefinition = 1;
 	public static readonly RULE_collectionDefinition = 2;
@@ -67,13 +69,13 @@ export class BlendMongoParser extends Parser {
 	private static readonly _LITERAL_NAMES: Array<string | undefined> = [
 		undefined, "'module'", "'collection'", "'{'", "','", "'}'", "'property'", 
 		"':'", "'('", "')'", "'reference'", "'unique'", "'index'", "'[]'", "'?'", 
-		"'String'", "'Number'", "'Boolean'", "'any'", "'Object'",
+		"'String'", "'Number'", "'Boolean'", "'any'", "'Object'", "'Date'", "'Mixed'",
 	];
 	private static readonly _SYMBOLIC_NAMES: Array<string | undefined> = [
 		undefined, undefined, undefined, undefined, undefined, undefined, undefined, 
 		undefined, undefined, undefined, undefined, undefined, undefined, undefined, 
-		undefined, undefined, undefined, undefined, undefined, undefined, "IDENTIFIER", 
-		"CAPITAL_IDENTIFIER", "WS",
+		undefined, undefined, undefined, undefined, undefined, undefined, undefined, 
+		undefined, "IDENTIFIER", "CAPITAL_IDENTIFIER", "WS",
 	];
 	public static readonly VOCABULARY: Vocabulary = new VocabularyImpl(BlendMongoParser._LITERAL_NAMES, BlendMongoParser._SYMBOLIC_NAMES, []);
 
@@ -501,7 +503,7 @@ export class BlendMongoParser extends Parser {
 			{
 			this.state = 91;
 			_la = this._input.LA(1);
-			if (!((((_la) & ~0x1F) === 0 && ((1 << _la) & ((1 << BlendMongoParser.T__14) | (1 << BlendMongoParser.T__15) | (1 << BlendMongoParser.T__16) | (1 << BlendMongoParser.T__17) | (1 << BlendMongoParser.T__18))) !== 0))) {
+			if (!((((_la) & ~0x1F) === 0 && ((1 << _la) & ((1 << BlendMongoParser.T__14) | (1 << BlendMongoParser.T__15) | (1 << BlendMongoParser.T__16) | (1 << BlendMongoParser.T__17) | (1 << BlendMongoParser.T__18) | (1 << BlendMongoParser.T__19) | (1 << BlendMongoParser.T__20))) !== 0))) {
 			this._errHandler.recoverInline(this);
 			} else {
 				if (this._input.LA(1) === Token.EOF) {
@@ -529,7 +531,7 @@ export class BlendMongoParser extends Parser {
 	}
 
 	public static readonly _serializedATN: string =
-		"\x03\uC91D\uCABA\u058D\uAFBA\u4F53\u0607\uEA8B\uC241\x03\x18`\x04\x02" +
+		"\x03\uC91D\uCABA\u058D\uAFBA\u4F53\u0607\uEA8B\uC241\x03\x1A`\x04\x02" +
 		"\t\x02\x04\x03\t\x03\x04\x04\t\x04\x04\x05\t\x05\x04\x06\t\x06\x04\x07" +
 		"\t\x07\x04\b\t\b\x04\t\t\t\x04\n\t\n\x04\v\t\v\x03\x02\x03\x02\x06\x02" +
 		"\x19\n\x02\r\x02\x0E\x02\x1A\x03\x03\x03\x03\x03\x03\x03\x04\x03\x04\x03" +
@@ -541,26 +543,26 @@ export class BlendMongoParser extends Parser {
 		"O\n\x07\x03\b\x03\b\x03\t\x03\t\x03\t\x03\t\x03\t\x03\t\x03\t\x05\tZ\n" +
 		"\t\x03\n\x03\n\x03\v\x03\v\x03\v\x02\x02\x02\f\x02\x02\x04\x02\x06\x02" +
 		"\b\x02\n\x02\f\x02\x0E\x02\x10\x02\x12\x02\x14\x02\x02\x04\x03\x02\r\x0E" +
-		"\x03\x02\x11\x15\x02^\x02\x16\x03\x02\x02\x02\x04\x1C\x03\x02\x02\x02" +
+		"\x03\x02\x11\x17\x02^\x02\x16\x03\x02\x02\x02\x04\x1C\x03\x02\x02\x02" +
 		"\x06\x1F\x03\x02\x02\x02\b7\x03\x02\x02\x02\n>\x03\x02\x02\x02\fI\x03" +
 		"\x02\x02\x02\x0EP\x03\x02\x02\x02\x10Y\x03\x02\x02\x02\x12[\x03\x02\x02" +
 		"\x02\x14]\x03\x02\x02\x02\x16\x18\x05\x04\x03\x02\x17\x19\x05\x06\x04" +
 		"\x02\x18\x17\x03\x02\x02\x02\x19\x1A\x03\x02\x02\x02\x1A\x18\x03\x02\x02" +
 		"\x02\x1A\x1B\x03\x02\x02\x02\x1B\x03\x03\x02\x02\x02\x1C\x1D\x07\x03\x02" +
-		"\x02\x1D\x1E\x07\x17\x02\x02\x1E\x05\x03\x02\x02\x02\x1F \x07\x04\x02" +
-		"\x02 !\x07\x17\x02\x02!\"\x07\x05\x02\x02\"\'\x05\b\x05\x02#$\x07\x06" +
+		"\x02\x1D\x1E\x07\x19\x02\x02\x1E\x05\x03\x02\x02\x02\x1F \x07\x04\x02" +
+		"\x02 !\x07\x19\x02\x02!\"\x07\x05\x02\x02\"\'\x05\b\x05\x02#$\x07\x06" +
 		"\x02\x02$&\x05\b\x05\x02%#\x03\x02\x02\x02&)\x03\x02\x02\x02\'%\x03\x02" +
 		"\x02\x02\'(\x03\x02\x02\x02(3\x03\x02\x02\x02)\'\x03\x02\x02\x02*+\x07" +
 		"\x06\x02\x02+0\x05\f\x07\x02,-\x07\x06\x02\x02-/\x05\f\x07\x02.,\x03\x02" +
 		"\x02\x02/2\x03\x02\x02\x020.\x03\x02\x02\x0201\x03\x02\x02\x0214\x03\x02" +
 		"\x02\x0220\x03\x02\x02\x023*\x03\x02\x02\x0234\x03\x02\x02\x0245\x03\x02" +
 		"\x02\x0256\x07\x07\x02\x026\x07\x03\x02\x02\x0278\x07\b\x02\x0289\x07" +
-		"\x16\x02\x029:\x07\t\x02\x02:<\x05\x10\t\x02;=\x05\n\x06\x02<;\x03\x02" +
+		"\x18\x02\x029:\x07\t\x02\x02:<\x05\x10\t\x02;=\x05\n\x06\x02<;\x03\x02" +
 		"\x02\x02<=\x03\x02\x02\x02=\t\x03\x02\x02\x02>?\x07\n\x02\x02?D\x05\x0E" +
 		"\b\x02@A\x07\x06\x02\x02AC\x05\x0E\b\x02B@\x03\x02\x02\x02CF\x03\x02\x02" +
 		"\x02DB\x03\x02\x02\x02DE\x03\x02\x02\x02EG\x03\x02\x02\x02FD\x03\x02\x02" +
-		"\x02GH\x07\v\x02\x02H\v\x03\x02\x02\x02IJ\x07\f\x02\x02JK\x07\x16\x02" +
-		"\x02KL\x07\t\x02\x02LN\x07\x17\x02\x02MO\x05\n\x06\x02NM\x03\x02\x02\x02" +
+		"\x02GH\x07\v\x02\x02H\v\x03\x02\x02\x02IJ\x07\f\x02\x02JK\x07\x18\x02" +
+		"\x02KL\x07\t\x02\x02LN\x07\x19\x02\x02MO\x05\n\x06\x02NM\x03\x02\x02\x02" +
 		"NO\x03\x02\x02\x02O\r\x03\x02\x02\x02PQ\t\x02\x02\x02Q\x0F\x03\x02\x02" +
 		"\x02RZ\x05\x12\n\x02ST\x05\x12\n\x02TU\x07\x0F\x02\x02UZ\x03\x02\x02\x02" +
 		"VW\x05\x12\n\x02WX\x07\x10\x02\x02XZ\x03\x02\x02\x02YR\x03\x02\x02\x02" +
